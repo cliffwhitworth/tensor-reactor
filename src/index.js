@@ -5,7 +5,8 @@ import ReactDOM from 'react-dom';
 // import App from './functionalComponent/App';
 // import App from './classComponent/App';
 // import App from './unsplash/App';
-import App from './redux';
+// import App from './redux';
+import App from './json';
 
 import * as serviceWorker from './serviceWorker';
 ReactDOM.render(<App />, document.querySelector('#root'));
