@@ -255,21 +255,23 @@ function detectNeighbor(s) {
 // return string if element = * print * else print count of * nearby (1 up, down, sides, diags)
 // e.g., **100233201***
 s = " 3, 5 ; **..........*** "
-detectNeighbor(s);
+const clean = tf.tidy(() => {
+    detectNeighbor(s);
+});
 
 // Create a buffer and set values at particular indices.
-const buffer = tf.buffer([2, 2]);
-buffer.set(1, 0, 0);
-buffer.set(2, 0, 1);
-buffer.set(3, 1, 0);
+// const buffer = tf.buffer([2, 2]);
+// buffer.set(1, 0, 0);
+// buffer.set(2, 0, 1);
+// buffer.set(3, 1, 0);
 
 // Convert the buffer back to a tensor.
 // buffer.toTensor().print();
 
 // Create a buffer and set values at particular indices.
-const a = tf.tensor1d([1, 2, 3, 4]);
-const buf = tf.buffer(a.shape, a.dtype, a.dataSync());
-buf.set(5, 0);
+// const a = tf.tensor1d([1, 2, 3, 4]);
+// const buf = tf.buffer(a.shape, a.dtype, a.dataSync());
+// buf.set(5, 0);
 // buf.toTensor().print();
 
 function tensorSpiral() {
@@ -308,4 +310,6 @@ function tensorSpiral() {
     bufx.toTensor().print()
 }
 
-// tensorSpiral();
+tf.tidy(tensorSpiral);
+
+console.log("Number of tensors in memory: %s", tf.memory().numTensors);
