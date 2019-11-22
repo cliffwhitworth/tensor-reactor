@@ -6,7 +6,8 @@ import ReactDOM from 'react-dom';
 // import App from './classComponent/App';
 // import App from './unsplash/App';
 // import App from './redux';
-import App from './json';
+// import App from './json';
+import App from './hooks';
 
 import * as serviceWorker from './serviceWorker';
 ReactDOM.render(<App />, document.querySelector('#root'));
