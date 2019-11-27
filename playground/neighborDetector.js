@@ -1,20 +1,31 @@
-// https://js.tensorflow.org/api/latest/
 
 const tf = require('@tensorflow/tfjs');
 
-function neighborDetector(s) {
-    let splt = s.split(";");
-    let shape  = splt[0].match(/\d/g).map(Number);
-    let arr  = splt[1].match(/\d/g).map(Number);
-    let matrix = tf.tensor(arr, shape);
-
-    matrix.pad([[1, 1], [1, 1]]).print();
-    matrix = matrix.pad([[1, 1], [1, 1]]);
-    // matrix.slice([0, 0], [3, 3]).print();
-    slice = matrix.slice([1, 4], [3, 3]);
-    slice.print();
-    console.log(slice.sum().dataSync()[0]);
+const nDetect = s => {
+    let rtn = '';
+    let arr = (s.split(';'));
+    let [rows, cols] = arr[0].match(/\d/g).map(Number);
+    let mStr = arr[1].replace(/\s/g, '')
+        .replace(/\*|./g,function(match) {return (match==".")?0:1;})
+        .split('')
+        .map(Number);
+    let a = tf.tensor2d(mStr,[rows, cols]);
+    a.print();
+    a = a.pad([[1,1],[1,1]]);
+    const mat = tf.buffer(a.shape, a.dtype, a.dataSync());
+    for (let x = 0; x <= rows; x++) {
+        for (let y = 0; y <= cols; y++) { 
+            if (x > 0 && x < rows+1 && y > 0 && y < cols+1) {
+                if (mat.get(x,y) == 1) {
+                    rtn += '*';
+                } else {
+                    rtn += mat.toTensor().slice([x-1, y-1], [3, 3]).sum().dataSync()[0];
+                }
+            }             
+        }
+    }
+    return rtn;
 }
 
-s = " 3, 5, ; 110000000000111";
-neighborDetector(s)
+s = ' 3, 5, ; **..........***';
+console.log(nDetect(s));
