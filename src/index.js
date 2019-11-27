@@ -7,7 +7,8 @@ import ReactDOM from 'react-dom';
 // import App from './unsplash/App';
 // import App from './redux';
 // import App from './json';
-import App from './hooks';
+// import App from './hooks';
+import App from './tfvis';
 
 import * as serviceWorker from './serviceWorker';
 ReactDOM.render(<App />, document.querySelector('#root'));
