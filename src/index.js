@@ -8,7 +8,8 @@ import ReactDOM from 'react-dom';
 // import App from './redux';
 // import App from './json';
 // import App from './hooks';
-import App from './tfvis';
+// import App from './tfvis';
+import App from './rest';
 
 import * as serviceWorker from './serviceWorker';
 ReactDOM.render(<App />, document.querySelector('#root'));

@@ -7,6 +7,7 @@ const App = () => {
             <h2 className="ui header">
             Hello House Prices Sample!
             </h2>  
+            <p>Start http-server --cors</p>
             <HouseList />                                           
         </div>
     )
