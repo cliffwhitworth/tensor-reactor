@@ -11,18 +11,18 @@ class ListRoute extends React.Component {
   renderList() {
     return this.props.resources.map(resource => {
       return (
-        <Link className="item" key={resource.id} to={`/route/read/${resource.id}`}>
-        <div className="right floated content">
-          {this.renderOwner(resource.id)}  
-          </div>
+        <div className="item" key={resource.id}>
+          {this.renderOwner(resource.id)}
           <i className="large middle aligned icon file outline" />
-            <div className="content">
-              <strong>Title:</strong> {resource.title}
-              <div className="description"><strong>Description:</strong> {resource.title}</div>
-            </div>
-        </Link>
-      )
-    })
+          <div className="content">
+            <Link to={`/streams/${resource.id}`} className="header">
+              {resource.title}
+            </Link>
+            <div className="description">{resource.description}</div>
+          </div>
+        </div>
+      );
+    });
   }
 
   renderCreateButton() {

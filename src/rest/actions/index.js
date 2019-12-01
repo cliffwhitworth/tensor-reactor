@@ -1,5 +1,5 @@
 import api from '../apiSetup/';
-// import history from '../history';
+import history from '../history';
 import {
   SIGN_IN,
   SIGN_OUT,
@@ -25,6 +25,7 @@ export const signOut = () => {
 export const postRoute = formValues => async (dispatch) => {
   const response = await api.post('/rest', { ...formValues });
   dispatch({ type: POST_ROUTE, payload: response.data });
+  history.push('/');
 }
 
 export const listRoute = () => async (dispatch) => {

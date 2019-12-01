@@ -7,6 +7,7 @@ import ListRoute from './routes/ListRoute';
 import ReadRoute from './routes/ReadRoute';
 import DeleteRoute from './routes/DeleteRoute';
 import PutRoute from './routes/PutRoute';
+import history from '../history';
 
 // const MelloWord = () => {
 //     return (
@@ -27,7 +28,8 @@ import PutRoute from './routes/PutRoute';
 const App = () => {
     return (
         <div className="ui container">
-            <BrowserRouter>
+            {/* change BrowserRouter to vanilla Router to control history */}
+            <BrowserRouter history={history}>
                 <div>
                     <Header />
                     <Route path="/" exact component={ListRoute} />
