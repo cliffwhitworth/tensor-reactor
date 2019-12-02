@@ -14,7 +14,10 @@ class PostRoute extends React.Component {
     return (
       <div className="ui container">
         <h3>Create Resource</h3>        
-        <FormHelper onSubmit={this.onSubmit} />
+        <FormHelper 
+          submitText="Submit"
+          onSubmit={this.onSubmit} 
+        />
       </div>
     );
   }

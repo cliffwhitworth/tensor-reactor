@@ -8,38 +8,40 @@ class ListRoute extends React.Component {
     this.props.listRoute();
   }
 
-  renderList() {
+  renderList = () => {
     return this.props.resources.map(resource => {
       return (
         <div className="item" key={resource.id}>
           {this.renderOwner(resource.id)}
           <i className="large middle aligned icon file outline" />
           <div className="content">
-            <Link to={`/streams/${resource.id}`} className="header">
+            <Link to={`/route/read/${resource.id}`} className="header">
               {resource.title}
             </Link>
             <div className="description">{resource.description}</div>
           </div>
         </div>
-      );
+      )
     });
   }
 
-  renderCreateButton() {
+  renderCreateButton = () => {
     if (this.props.isSignedIn) {
       return (
+        <div style={{textAlign: "right"}}>
           <Link className="ui button primary" to="/route/post">
             Create New Resource
           </Link>
+        </div>
       )
     }
   }
 
-  renderOwner(id) {
+  renderOwner = id => {
     if (this.props.isSignedIn) {
       return (
-        <div>
-          <Link className="ui button green" to={`/route/put/${id}`}>
+        <div className="right floated content">
+          <Link className="ui button green" to={`/route/patch/${id}`}>
             Edit
           </Link>
           <Link className="ui button negative" to={`/route/delete/${id}`}>
@@ -52,15 +54,12 @@ class ListRoute extends React.Component {
 
   render() {
     return (
-      <div className="ui container">
+      <div>
         <h3>List of Resources</h3>
         <div className="ui celled list">
           {this.renderList()}
         </div>
-        <div className="ui celled list" style={{textAlign: "right"}}>
-          {this.renderCreateButton()}<br /> 
-          (Start json-server)
-        </div>               
+        {this.renderCreateButton()}               
       </div>
     );
   }  

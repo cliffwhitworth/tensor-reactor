@@ -7,7 +7,7 @@ import {
   LIST_ROUTE,
   READ_ROUTE,
   DELETE_ROUTE,
-  PUT_ROUTE
+  PATCH_ROUTE
 } from './types';
 
 export const signIn = () => {
@@ -41,9 +41,11 @@ export const readRoute = id => async (dispatch) => {
 export const deleteRoute = id => async (dispatch) => {
   await api.delete(`/rest/${id}`)
   dispatch({ type: DELETE_ROUTE, payload: id });
+  history.push('/');
 }
 
-export const putRoute = (id, formValues) => async (dispatch) => {
-  const response = await api.put(`/rest/${id}`, formValues);
-  dispatch({ type: PUT_ROUTE, payload: response.data });
+export const patchRoute = (id, formValues) => async (dispatch) => {
+  const response = await api.patch(`/rest/${id}`, formValues);
+  dispatch({ type: PATCH_ROUTE, payload: response.data });
+  history.push('/');
 }

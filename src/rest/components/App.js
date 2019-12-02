@@ -1,12 +1,12 @@
 import React from 'react';
 // import { BrowserRouter, HashRouter, MemoryRouter, Route, Link } from 'react-router-dom';
-import { BrowserRouter, Route } from 'react-router-dom';
+import { Router, Route } from 'react-router-dom';
 import Header from './Header';
 import PostRoute from './routes/PostRoute';
 import ListRoute from './routes/ListRoute';
 import ReadRoute from './routes/ReadRoute';
 import DeleteRoute from './routes/DeleteRoute';
-import PutRoute from './routes/PutRoute';
+import PatchRoute from './routes/PatchRoute';
 import history from '../history';
 
 // const MelloWord = () => {
@@ -29,7 +29,7 @@ const App = () => {
     return (
         <div className="ui container">
             {/* change BrowserRouter to vanilla Router to control history */}
-            <BrowserRouter history={history}>
+            <Router history={history}>
                 <div>
                     <Header />
                     <Route path="/" exact component={ListRoute} />
@@ -37,9 +37,9 @@ const App = () => {
                     <Route path="/route/list" exact component={ListRoute} />
                     <Route path="/route/read/:id" exact component={ReadRoute} />
                     <Route path="/route/delete/:id" exact component={DeleteRoute} />
-                    <Route path="/route/put/:id" exact component={PutRoute} />
+                    <Route path="/route/patch/:id" exact component={PatchRoute} />
                 </div>
-            </BrowserRouter>
+            </Router>
             {/*<br /><strong>Hash Browser</strong><br />
              <HashRouter> 
                 <div>

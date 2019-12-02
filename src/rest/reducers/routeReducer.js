@@ -4,7 +4,7 @@ import {
   LIST_ROUTE,
   READ_ROUTE,
   DELETE_ROUTE,
-  PUT_ROUTE
+  PATCH_ROUTE
 } from '../actions/types';
 
 export default (state = {}, action) => {
@@ -17,7 +17,7 @@ export default (state = {}, action) => {
       return { ...state, [action.payload.id]: action.payload };    
     case DELETE_ROUTE:
       return _.omit(state, action.payload);
-    case PUT_ROUTE:
+    case PATCH_ROUTE:
       // array-based
       // return state.map(route => {
       //   if (route.id === action.payload.id) {

@@ -1,7 +1,8 @@
 import React from 'react';
+import { connect } from 'react-redux';
 import { Field, reduxForm } from 'redux-form';
 
-class StreamForm extends React.Component {
+class FormHelper extends React.Component {
   renderError({ error, touched }) {
     if (touched && error) {
       return (
@@ -23,6 +24,14 @@ class StreamForm extends React.Component {
     );
   };
 
+  renderSubmitButton = () => {
+    if(this.props.isSignedIn) {
+      return (
+        <button className="ui button primary">{this.props.submitText}</button>
+      )
+    }
+  }
+
   onSubmit = formValues => {
     this.props.onSubmit(formValues);
   };
@@ -39,7 +48,7 @@ class StreamForm extends React.Component {
           component={this.renderInput}
           label="Enter Description"
         />
-        <button className="ui button primary">Submit</button>
+        {this.renderSubmitButton()}
       </form>
     );
   }
@@ -59,7 +68,13 @@ const validate = formValues => {
   return errors;
 };
 
-export default reduxForm({
-  form: 'streamForm',
+const mapStateToProps = state => {
+  return {isSignedIn: state.auth.isSignedIn}
+}
+
+const rForm = reduxForm({
+  form: 'FormHelper',
   validate
-})(StreamForm);
+})(FormHelper);
+
+export default connect(mapStateToProps)(rForm);
