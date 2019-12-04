@@ -1,4 +1,7 @@
+// https://github.com/priyesh18/tensorflowjs-model
+
 const tf = require('@tensorflow/tfjs');
+require('@tensorflow/tfjs-node');
 
 const normalizeTensor = tensor => {
     // min max normalization
@@ -18,6 +21,9 @@ const denormalizeTensor = (tensor, min, max) => {
 
 const getData = async () => {
     // import data
+    // npm i http-server -
+    // navigate to ~/code/tensor-reactor/playground
+    // http-server
     const data = await tf.data.csv("http://127.0.0.1:8080/data/kc_house_data.csv");
 
     // shuffle data
@@ -55,7 +61,30 @@ const getData = async () => {
     const [y_train, y_test] = tf.split(y.tensor, 2);
 
     // inspect data
-    X_train.print(true);
+    // X_train.print(true);
+
+    const model = createModel();
+    model.summary();
+    // const layer = model.getLayer(undefined, 0);
+}
+
+const createModel = () => {
+    const model = tf.sequential();
+
+    model.add(tf.layers.dense({
+        units: 1,
+        useBias: true,
+        activation: 'linear',
+        inputDim: 1,
+    }));
+
+    const optimizer = tf.train.sgd(0.1);
+    model.compile({
+        loss: 'meanSquaredError',
+        optimizer,
+    });
+
+    return model;
 }
 
 getData();

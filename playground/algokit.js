@@ -206,7 +206,7 @@ function isFibonacci(n) {
 // console.log(isFibonacci(21));
 
 const tf = require('@tensorflow/tfjs');
-// require('@tensorflow/tfjs-node');
+require('@tensorflow/tfjs-node');
 
 function detectNeighbor(s) {
     const splt = s.split(";");
