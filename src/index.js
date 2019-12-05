@@ -9,7 +9,8 @@ import ReactDOM from 'react-dom';
 // import App from './json';
 // import App from './hooks';
 // import App from './tfvis';
-import App from './rest';
+// import App from './rest';
+import App from './simpleLinearRegression';
 
 import * as serviceWorker from './serviceWorker';
 ReactDOM.render(<App />, document.querySelector('#root'));
