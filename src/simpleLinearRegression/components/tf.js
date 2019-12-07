@@ -1,13 +1,7 @@
 const tf = require('@tensorflow/tfjs');
 const tfvis = require('@tensorflow/tfjs-vis');
 
-export const plotAndCreateModel = async (points, featureName) => {
-
-    const model = createModel();
-    const layer = model.getLayer(undefined, 0);
-    
-    tfvis.show.modelSummary({ name: `Model Summary`, tab: `Model` }, model);
-    tfvis.show.layer({ name: `Layer 1`, tab: `Model Inspection` }, layer);
+export const plot = (points, featureName) => {
 
     tfvis.render.scatterplot(
         {name: `${featureName} vs Price`},
@@ -51,7 +45,7 @@ export const denormalizeTensor = (tensor, min, max) => {
     return tensor.mul(max.sub(min)).add(min);
 }
 
-const createModel = () => {
+export const createModel = () => {
     const model = tf.sequential();
 
     model.add(tf.layers.dense({
@@ -93,8 +87,9 @@ export const trainModel = async (model, x, y) => {
     });
 }
 
-export const splitTrainTestData = async data => {
+export const splitTrainTestData = async (incoming) => {
 
+    const data = await incoming;
     // shuffle data
     tf.util.shuffle(data);
                         
@@ -103,7 +98,18 @@ export const splitTrainTestData = async data => {
         data.pop();
     }
 
-    const {X, y} = await prepareData(data);
+    // make tensor of x and y values
+    const rawX = makeTensor(data.map(p => p.x));
+    const rawY = makeTensor(data.map(p => p.y));
+    console.log("Number of tensors in memory: %s", tf.memory().numTensors);
+
+    // normalize data
+    const X = normalizeTensor(rawX);
+    const y = normalizeTensor(rawY);    
+    console.log("Number of tensors in memory: %s", tf.memory().numTensors);
+    rawX.dispose()
+    rawY.dispose()
+    console.log("Number of tensors in memory after disposal: %s", tf.memory().numTensors);
 
     // split the data
     const [X_train, X_test] = tf.split(X.tensor, 2);
@@ -111,17 +117,4 @@ export const splitTrainTestData = async data => {
 
     return [X_train, y_train, X_test, y_test];
 
-}
-
-const prepareData = async points => {
-    // make tensor of x and y values
-    const rawX = await makeTensor(points.map(p => p.x));
-    const rawY = await makeTensor(points.map(p => p.y));
-    console.log("Number of tensors in memory: %s", tf.memory().numTensors);
-
-    // normalize data
-    const X = normalizeTensor(rawX);
-    const y = normalizeTensor(rawY);    
-    console.log("Number of tensors in memory: %s", tf.memory().numTensors);
-    return [X, y];
 }
