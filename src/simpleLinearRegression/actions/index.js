@@ -14,7 +14,7 @@ export const getData = () => async (dispatch) => {
 const getTFData = async () => {
     // 'https://storage.googleapis.com/tfjs-examples/multivariate-linear-regression/data/boston-housing-train.csv';
 
-    const data = tf.data.csv("http://192.168.1.223:8080/data/kc_house_data.csv");
+    const data = tf.data.csv("http://192.168.1.223:3000/data/kc_house_data.csv");
     const pointsDataset = data.map(record => ({
         x: record.sqft_living,
         y: record.price,

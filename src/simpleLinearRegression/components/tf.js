@@ -11,18 +11,6 @@ export const plot = (points, featureName) => {
             yLabel: "Price",
         }
     )
-    
-    // const result = await trainModel(model, X_train, y_train);
-    // const trainLoss = result.history.loss.pop();
-    // console.log(`Training loss: ${trainLoss}`);
-
-    // const valLoss = result.history.val_loss.pop();
-    // console.log(`Validation loss: ${valLoss}`);
-
-    // const testTensor = model.evaluate(X_test, y_test);
-    // const testLoss = await testTensor.dataSync();
-    // console.log(`Testing loss: ${testLoss}`);
-
 }
 
 const makeTensor = data => {    
@@ -64,7 +52,7 @@ export const createModel = () => {
     return model;
 }
 
-export const trainModel = async (model, x, y) => {
+export const trainModel = (model, x, y) => {
     // const { onBatchEnd, onEpochEnd } = tfvis.show.fitCallbacks (
     const {onEpochEnd} = tfvis.show.fitCallbacks (
         { name: 'Training Performance' },
