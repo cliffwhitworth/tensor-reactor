@@ -3,20 +3,20 @@ import { connect } from 'react-redux';
 import { getData } from '../actions';
 import { plot, createModel, splitTrainTestData, trainModel } from './tf';
 
-// const tf = require('@tensorflow/tfjs');
+const tf = require('@tensorflow/tfjs');
 const tfvis = require('@tensorflow/tfjs-vis');
 
 class App extends React.Component {
-    state = { 
+
+    constructor(props) {
+        super(props)        
+        this.saveModelAs = React.createRef();       
+    }
+
+    state = {
         isDataLoading: false,
-        isModelTraining: false,
-        isModelTesting: false,
-        loadDataButtonText: 'Load Data',
-        model: {},
-        X_train: [],
-        y_train: [],
-        X_test: [],
-        y_test: [],
+        isLoadDataButtonDisabled: true,           
+        loadDataButtonText: 'Load Data',       
         train_loss: '',
         val_loss: '',
         test_loss: '',
@@ -25,6 +25,7 @@ class App extends React.Component {
     }
 
     componentDidMount() {
+        this.initState();
         tfvis.visor().close();
     }
 
@@ -34,9 +35,40 @@ class App extends React.Component {
             console.log('hello update');
             this.setState({
                 loadDataButtonText: 'Data Loaded',
+                isDataLoaded: true,
                 isDataLoading: false
             });
         }
+    }
+
+    initState = () => {
+        this.setState({ 
+            isDataLoading: false,
+            isLoadDataButtonDisabled: true, 
+            isLoadModelButtonDisabled: true,       
+            isDataLoaded: false,
+            isDataPlotted: false,
+            isDataSplit: false,
+            isModelCreated: false,
+            isModelTraining: false,
+            isModelTrained: false,
+            isModelTesting: false,
+            isModelSaveable: false,
+            isPredictReady: false,
+            loadDataButtonText: 'Load Data',
+            loadModelName: '',
+            model: {},
+            modelName: '',
+            X_train: [],
+            y_train: [],
+            X_test: [],
+            y_test: [],
+            train_loss: '',
+            val_loss: '',
+            test_loss: '',
+            metric: '',
+            prediction: ''
+        });
     }
 
     handleTFVIS = () => {
@@ -48,14 +80,30 @@ class App extends React.Component {
         this.props.getData();
     }
 
+    saveModelName = e => {
+        this.setState({ 
+            modelName: e.target.value,
+            isLoadDataButtonDisabled: e.target.value?false:true 
+        })
+    }
+
+    handleLoadModelName = e => {
+        this.setState({ 
+            loadModelName: e.target.value,
+            isLoadModelButtonDisabled: e.target.value?false:true
+        });
+    }
+
     plotData = () => {
         tfvis.visor().open();
-        plot(this.props.data, "Square Feet");        
+        plot(this.props.data, "Square Feet");  
+        this.setState({ isDataPlotted: true });      
     }
 
     splitData = async () => {
         const [X_train, y_train, X_test, y_test] = await splitTrainTestData(this.props.data[0]);
         this.setState({
+            isDataSplit: true,
             X_train: X_train,
             y_train: y_train,
             X_test: X_test,
@@ -65,7 +113,7 @@ class App extends React.Component {
 
     createModel = () => {
         const model = createModel();
-        this.setState({ model: model });
+        this.setState({ model: model, isModelCreated: true });
         const layer = model.getLayer(undefined, 0);
         
         tfvis.show.modelSummary({ name: `Model Summary`, tab: `Model` }, model);
@@ -86,7 +134,8 @@ class App extends React.Component {
         console.log(`Validation loss: ${valLoss}`); 
         
         this.setState({
-            isModelTraining: false, 
+            isModelTraining: false,
+            isModelTrained: true, 
             train_loss: trainLoss,
             val_loss: valLoss
         });
@@ -101,8 +150,41 @@ class App extends React.Component {
 
         this.setState({ 
             isModelTesting: false,
+            isModelSaveable: true,
+            isPredictReady: true,
             test_loss: testLoss
         });
+    }
+
+    saveModel = async () => {
+        console.log(this.saveModelAs.current.value);
+        const modelName = this.saveModelAs.current.value?this.saveModelAs.current.value:this.state.modelName;
+        console.log(modelName);
+        const savedModel = await this.state.model.save(`localstorage://${modelName}`);
+        console.log(savedModel.modelArtifactsInfo);
+    }
+
+    loadModel = async () => {
+        const storageKey = `localstorage://${this.state.loadModelName}`;
+        const models = await tf.io.listModels();
+        console.log(models);
+        const modelInfo = models[storageKey];
+        if (modelInfo) {
+            const model = await tf.loadLayersModel(storageKey);
+            const layer = model.getLayer(undefined, 0);
+            this.setState({ 
+                isPredictReady: true,
+                isLoadModelButtonDisabled: true
+            })
+        
+            tfvis.show.modelSummary({ name: `Model Summary`, tab: `Model` }, model);
+            tfvis.show.layer({ name: `Layer 1`, tab: `Model Inspection` }, layer);
+            tfvis.visor().open();
+        }
+    }
+
+    makePrediction = () => {
+        return
     }
 
     renderLoader = () => {
@@ -127,7 +209,7 @@ class App extends React.Component {
             )
         } else {
             return (
-                <button onClick={this.loadData} className="ui button">{this.state.loadDataButtonText}</button>
+                <button onClick={this.loadData}  className="ui button" disabled={this.state.isLoadDataButtonDisabled}>{this.state.loadDataButtonText}</button>
             )
         }
     }
@@ -139,7 +221,7 @@ class App extends React.Component {
             )
         } else {
             return (
-                <button onClick={this.trainModel} className="ui button">Train Model</button>
+                <button onClick={this.trainModel} className="ui button" disabled={!this.state.isModelCreated}>Train Model</button>
             )
         }
     }
@@ -151,7 +233,7 @@ class App extends React.Component {
             )
         } else {
             return (
-                <button onClick={this.testModel} className="ui button">Test Model</button>
+                <button onClick={this.testModel} className="ui button" disabled={!this.state.isModelTrained}>Test Model</button>
             )
         }
     }
@@ -173,9 +255,9 @@ class App extends React.Component {
                         </div>
                         <div className="ui three column grid">
                             <div className="column">
-                                <select className="ui dropdown">
+                                <select onChange={this.saveModelName} className="ui dropdown">
                                     <option value="">Load Data</option>
-                                    <option value="1">KC Housing Prices</option>
+                                    <option value="kc_house_prices">KC Housing Prices</option>
                                 </select>
                             </div>
                             <div className="column">
@@ -196,7 +278,7 @@ class App extends React.Component {
                                 </select>
                             </div>
                             <div className="column">
-                                <button onClick={this.plotData} className="ui button">Plot Data</button>
+                                <button onClick={this.plotData} className="ui button" disabled={!this.state.isDataLoaded}>Plot Data</button>
                             </div>
                             <div className="column"></div> 
                         </div>
@@ -205,7 +287,8 @@ class App extends React.Component {
                 <div className="ui one column celled grid">
                     <div className="column">
                         <h3>Split Train Test Data</h3>
-                        <button onClick={this.splitData} className="ui button">Split Data</button>
+                        <button onClick={this.splitData} className="ui button" disabled={!this.state.isDataPlotted}>Split Data</button> &nbsp;
+                        <button onClick={this.handleTFVIS} className="ui button">Toggle Visor</button>
                     </div>                    
                 </div>
                 <div className="ui one column celled grid">
@@ -242,7 +325,11 @@ class App extends React.Component {
                                 </div>
                             </div>
                             <div className="column">
-                                <h4>Loss Function</h4>
+                                <h4>Epochs</h4>
+                                <div className="ui input">
+                                    <input type="text" placeholder="Enter # of epocs..." />
+                                </div>
+                                {/* <h4>Loss Function</h4>
                                 <div className="grouped fields">
                                     <label>Choose loss function</label>
                                     <div className="field">
@@ -263,13 +350,13 @@ class App extends React.Component {
                                         <label>RMSE</label>
                                     </div>
                                     </div>
-                                </div>
+                                </div> */}
                             </div>                            
                             <div className="column"></div>
                         </div>
                     </div>
                     <div className="column">
-                        <button onClick={this.createModel} className="ui button">Create Model</button>
+                        <button onClick={this.createModel} className="ui button" disabled={!this.state.isDataSplit}>Create Model</button>
                         <button onClick={this.handleTFVIS} className="ui button">Toggle Visor</button>
                     </div>
                 </div>
@@ -341,19 +428,23 @@ class App extends React.Component {
                         </div>                        
                         <div className="ui three column grid">
                             <div className="column">
-                                <button className="ui button">Save Model</button>
-                            </div>
+                                <div className="ui input">
+                                    <input type="text" placeholder="Save model as..." ref={this.saveModelAs} />
+                                </div>
+                                <br /><br />
+                                <select onChange={this.handleLoadModelName} className="ui dropdown">
+                                    <option value="">Load Model</option>
+                                    <option value="kc_house_prices">KC House Prices</option>
+                                </select>                                                         
+                            </div>                            
+                            <div className="column">
+                            <button onClick={this.saveModel} className="ui button" disabled={!this.state.isModelSaveable}>Save Model</button>
+                            <br /><br />
+                            <button onClick={this.loadModel} className="ui button" disabled={this.state.isLoadModelButtonDisabled}>Load Model</button>
+                            </div>  
                             <div className="column">
                                 <button onClick={this.handleTFVIS} className="ui button">Toggle Visor</button>
-                            </div>
-                            <div className="column">
-                                <select className="ui dropdown">
-                                    <option value="">Choose Model</option>
-                                    <option value="1">Model 1</option>
-                                </select>
-                                <br /><br />
-                                <button className="ui button">Load Model</button>
-                            </div>                            
+                            </div>                          
                         </div>
                     </div>
                     <div className="column">
@@ -374,7 +465,7 @@ class App extends React.Component {
                                 </div>
                             </div>                             
                             <div className="column">
-                                <button className="ui button">Predict</button>                                                              
+                                <button onClick={this.makePrediction()} className="ui button" disabled={!this.state.isPredictReady}>Predict</button>                                                              
                             </div>
                             <div className="column"></div>                            
                         </div>
