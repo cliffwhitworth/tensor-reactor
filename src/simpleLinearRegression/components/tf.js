@@ -17,10 +17,10 @@ const makeTensor = data => {
     return tf.tensor2d(data, [data.length, 1]);
 }
 
-const normalizeTensor = tensor => {
+export const normalizeTensor = (tensor, haveMin=null, haveMax=null) => {
     // min max normalization
-    const min = tensor.min();
-    const max = tensor.max();
+    const min = haveMin || tensor.min();
+    const max = haveMax || tensor.max();
     return {
         tensor: tensor.sub(min).div(max.sub(min)),
         min,
@@ -93,16 +93,21 @@ export const splitTrainTestData = async (incoming) => {
 
     // normalize data
     const X = normalizeTensor(rawX);
-    const y = normalizeTensor(rawY);    
+    console.log(X.min.dataSync()[0]);
+    const X_min = X.min.dataSync()[0];
+    const X_max = X.max.dataSync()[0];
+    const y = normalizeTensor(rawY); 
+    const y_min = y.min.dataSync()[0];
+    const y_max = y.max.dataSync()[0]; 
     console.log("Number of tensors in memory: %s", tf.memory().numTensors);
-    rawX.dispose()
-    rawY.dispose()
+    rawX.dispose();
+    rawY.dispose();
     console.log("Number of tensors in memory after disposal: %s", tf.memory().numTensors);
-
+    
     // split the data
     const [X_train, X_test] = tf.split(X.tensor, 2);
     const [y_train, y_test] = tf.split(y.tensor, 2);
-
-    return [X_train, y_train, X_test, y_test];
+    return [X_min, X_max, y_min, y_max, X_train, y_train, X_test, y_test];
+    // return [X_train, y_train, X_test, y_test];
 
 }

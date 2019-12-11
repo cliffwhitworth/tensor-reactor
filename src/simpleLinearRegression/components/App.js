@@ -1,7 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { getData } from '../actions';
-import { plot, createModel, splitTrainTestData, trainModel } from './tf';
+import { plot, createModel, splitTrainTestData, trainModel, normalizeTensor, denormalizeTensor } from './tf';
 
 const tf = require('@tensorflow/tfjs');
 const tfvis = require('@tensorflow/tfjs-vis');
@@ -10,7 +10,8 @@ class App extends React.Component {
 
     constructor(props) {
         super(props)        
-        this.saveModelAs = React.createRef();       
+        this.saveModelAs = React.createRef();
+        this.userPred = React.createRef();       
     }
 
     state = {
@@ -59,6 +60,10 @@ class App extends React.Component {
             loadModelName: '',
             model: {},
             modelName: '',
+            X_min: 0,
+            X_max: 0,
+            y_min: 0,
+            y_max: 0,
             X_train: [],
             y_train: [],
             X_test: [],
@@ -101,9 +106,15 @@ class App extends React.Component {
     }
 
     splitData = async () => {
-        const [X_train, y_train, X_test, y_test] = await splitTrainTestData(this.props.data[0]);
+        // const [X_train, y_train, X_test, y_test] = await splitTrainTestData(this.props.data[0]);
+        const [X_min, X_max, y_min, y_max, X_train, y_train, X_test, y_test] = await splitTrainTestData(this.props.data[0]);
+        
         this.setState({
             isDataSplit: true,
+            X_min: X_min,
+            X_max: X_max,
+            y_min: y_min,
+            y_max: y_max,
             X_train: X_train,
             y_train: y_train,
             X_test: X_test,
@@ -162,6 +173,15 @@ class App extends React.Component {
         console.log(modelName);
         const savedModel = await this.state.model.save(`localstorage://${modelName}`);
         console.log(savedModel.modelArtifactsInfo);
+
+        const dataSetMinMax = {
+            Xmin: this.state.X_min,
+            Xmax: this.state.X_max,
+            ymin: this.state.y_min,
+            ymax: this.state.y_max
+        }
+        
+        window.localStorage.setItem(`minmax_${this.state.modelName}`, JSON.stringify(dataSetMinMax));
     }
 
     loadModel = async () => {
@@ -169,12 +189,20 @@ class App extends React.Component {
         const models = await tf.io.listModels();
         console.log(models);
         const modelInfo = models[storageKey];
+
+        const {Xmin, Xmax, ymin, ymax} = JSON.parse(window.localStorage.getItem(`minmax_${this.state.loadModelName}`));
+        console.log(Xmin, Xmax, ymin, ymax);
         if (modelInfo) {
             const model = await tf.loadLayersModel(storageKey);
             const layer = model.getLayer(undefined, 0);
             this.setState({ 
+                model: model,
                 isPredictReady: true,
-                isLoadModelButtonDisabled: true
+                isLoadModelButtonDisabled: true,
+                X_min: Xmin,
+                X_max: Xmax,
+                y_min: ymin,
+                y_max: ymax
             })
         
             tfvis.show.modelSummary({ name: `Model Summary`, tab: `Model` }, model);
@@ -183,8 +211,18 @@ class App extends React.Component {
         }
     }
 
-    makePrediction = () => {
-        return
+    makePrediction = () => {   
+        tf.tidy(() => {
+            const tensorXmin = tf.tensor1d([this.state.X_min]);
+            const tensorXmax = tf.tensor1d([this.state.X_max]);
+            const tensorymin = tf.tensor1d([this.state.y_min]);
+            const tensorymax = tf.tensor1d([this.state.y_max]);
+            const predTensorInput = tf.tensor1d([parseInt(this.userPred.current.value)]);
+            const normalizedInputPred = normalizeTensor(predTensorInput, tensorXmin, tensorXmax);
+            const normalizedOutputPred = this.state.model.predict(normalizedInputPred.tensor);
+            const predTensorOutput = denormalizeTensor(normalizedOutputPred, tensorymin, tensorymax);
+            this.setState({ prediction: predTensorOutput.dataSync()[0] });
+        })
     }
 
     renderLoader = () => {
@@ -454,7 +492,7 @@ class App extends React.Component {
                         <div className="ui three column grid">
                             <div className="column">
                                 <div className="ui input">
-                                    <input type="text" placeholder="enter value" />
+                                    <input type="text" placeholder="Enter value..." ref={this.userPred} />
                                 </div>
                                 <br /><br />
                                 <div className="ui labeled input">
@@ -465,7 +503,7 @@ class App extends React.Component {
                                 </div>
                             </div>                             
                             <div className="column">
-                                <button onClick={this.makePrediction()} className="ui button" disabled={!this.state.isPredictReady}>Predict</button>                                                              
+                                <button onClick={this.makePrediction} className="ui button" disabled={!this.state.isPredictReady}>Predict</button>                                                              
                             </div>
                             <div className="column"></div>                            
                         </div>
