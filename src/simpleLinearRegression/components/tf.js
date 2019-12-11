@@ -1,16 +1,43 @@
 const tf = require('@tensorflow/tfjs');
 const tfvis = require('@tensorflow/tfjs-vis');
 
-export const plot = (points, featureName) => {
+export const plot = (points, featureName, predictedValues=null) => {
+    const values = [points];
+    const series = ["Plots"];
+    if (Array.isArray(predictedValues)) {
+        values.push(predictedValues);
+        series.push("Trend Line");
+    }
 
     tfvis.render.scatterplot(
         {name: `${featureName} vs Price`},
-        {values: points, series: ["original"]},
+        {values: values, series: series},
         {
             xLabel: featureName,
             yLabel: "Price",
         }
     )
+}
+
+export const createTrendLine = async (model, points, tensorXmin, tensorXmax, tensorymin, tensorymax) => {
+    // const dataPoints = await points;
+    const [xs, ys] = tf.tidy(() => {
+        const normalizedXs = tf.linspace(0, 1, 100);
+        const normalizedYs = model.predict(normalizedXs.reshape([100, 1]));
+        const xs = denormalizeTensor(normalizedXs, tensorXmin, tensorXmax);
+        const ys = denormalizeTensor(normalizedYs, tensorymin, tensorymax);
+        return [xs.dataSync(), ys.dataSync()]
+    });   
+    
+    const predictedPoints = async () => Array.from(xs).map((val, index) => {
+        return { x: val, y: ys[index] }
+    });
+
+    predictedPoints().then(data => {
+        plot(points, "Square Feet", data);
+        const layer = model.getLayer(undefined, 0); 
+        tfvis.show.layer({ name: `Layer 1`, tab: `Model Inspection` }, layer);        
+    })        
 }
 
 const makeTensor = data => {    
@@ -52,7 +79,7 @@ export const createModel = () => {
     return model;
 }
 
-export const trainModel = (model, x, y) => {
+export const trainModel = (model, x, y, data, X_min, X_max, y_min, y_max) => {
     // const { onBatchEnd, onEpochEnd } = tfvis.show.fitCallbacks (
     const {onEpochEnd} = tfvis.show.fitCallbacks (
         { name: 'Training Performance' },
@@ -70,7 +97,10 @@ export const trainModel = (model, x, y) => {
         callbacks: {
             // onEpochEnd: (epoch, log) => console.log(`Epoch ${epoch}: loss = ${log.loss}`)
             // onEpochEnd, onBatchEnd, 
-            onEpochEnd,            
+            onEpochEnd, 
+            onEpochBegin: async () => {
+                createTrendLine(model, data, X_min, X_max, y_min, y_max)
+            }           
         }
     });
 }

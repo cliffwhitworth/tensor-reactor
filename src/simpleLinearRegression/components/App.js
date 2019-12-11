@@ -1,7 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { getData } from '../actions';
-import { plot, createModel, splitTrainTestData, trainModel, normalizeTensor, denormalizeTensor } from './tf';
+import { plot, createModel, splitTrainTestData, trainModel, normalizeTensor, denormalizeTensor, createTrendLine } from './tf';
 
 const tf = require('@tensorflow/tfjs');
 const tfvis = require('@tensorflow/tfjs-vis');
@@ -17,7 +17,8 @@ class App extends React.Component {
     state = {
         isDataLoading: false,
         isLoadDataButtonDisabled: true,           
-        loadDataButtonText: 'Load Data',       
+        loadDataButtonText: 'Load Data',
+        splitDataButtonText: 'Split Data',       
         train_loss: '',
         val_loss: '',
         test_loss: '',
@@ -33,12 +34,7 @@ class App extends React.Component {
     // componentDidUpdate(object prevProps, object prevState)
     componentDidUpdate(prevProps) {
         if (prevProps !== this.props) {
-            console.log('hello update');
-            this.setState({
-                loadDataButtonText: 'Data Loaded',
-                isDataLoaded: true,
-                isDataLoading: false
-            });
+            console.log('hello update');            
         }
     }
 
@@ -46,7 +42,8 @@ class App extends React.Component {
         this.setState({ 
             isDataLoading: false,
             isLoadDataButtonDisabled: true, 
-            isLoadModelButtonDisabled: true,       
+            isLoadModelButtonDisabled: true,
+            isLoadModelDataLoading: false,       
             isDataLoaded: false,
             isDataPlotted: false,
             isDataSplit: false,
@@ -57,6 +54,7 @@ class App extends React.Component {
             isModelSaveable: false,
             isPredictReady: false,
             loadDataButtonText: 'Load Data',
+            splitDataButtonText: 'Split Data',
             loadModelName: '',
             model: {},
             modelName: '',
@@ -80,9 +78,14 @@ class App extends React.Component {
         tfvis.visor().toggle();
     }
 
-    loadData = () => {        
+    loadData = async () => {        
         this.setState({ isDataLoading: true });
-        this.props.getData();
+        await this.props.getData();
+        this.setState({
+            loadDataButtonText: 'Data Loaded',
+            isDataLoaded: true,
+            isDataLoading: false
+        });
     }
 
     saveModelName = e => {
@@ -99,10 +102,10 @@ class App extends React.Component {
         });
     }
 
-    plotData = () => {
-        tfvis.visor().open();
-        plot(this.props.data, "Square Feet");  
-        this.setState({ isDataPlotted: true });      
+    plotData = () => {        
+        plot(this.props.data[0], "Square Feet");  
+        this.setState({ isDataPlotted: true });
+        tfvis.visor().open();   
     }
 
     splitData = async () => {
@@ -111,6 +114,7 @@ class App extends React.Component {
         
         this.setState({
             isDataSplit: true,
+            splitDataButtonText: 'Data Split',
             X_min: X_min,
             X_max: X_max,
             y_min: y_min,
@@ -136,8 +140,12 @@ class App extends React.Component {
         tfvis.visor().setActiveTab('Visor');
         tfvis.visor().open();
         this.setState({ isModelTraining: true })
-        const { model, X_train, y_train } = this.state;
-        const result = await trainModel(model, X_train, y_train);
+        const { model, X_train, y_train, X_min, X_max, y_min, y_max } = this.state;
+        const tensorXmin = tf.tensor1d([X_min]);
+        const tensorXmax = tf.tensor1d([X_max]);
+        const tensorymin = tf.tensor1d([y_min]);
+        const tensorymax = tf.tensor1d([y_max]);
+        const result = await trainModel(model, X_train, y_train, this.props.data[0], tensorXmin, tensorXmax, tensorymin, tensorymax);
         const trainLoss = result.history.loss.pop();
         console.log(`Training loss: ${trainLoss}`);
 
@@ -185,6 +193,8 @@ class App extends React.Component {
     }
 
     loadModel = async () => {
+        this.setState({isLoadModelDataLoading: true});
+        await this.props.getData();
         const storageKey = `localstorage://${this.state.loadModelName}`;
         const models = await tf.io.listModels();
         console.log(models);
@@ -198,15 +208,17 @@ class App extends React.Component {
             this.setState({ 
                 model: model,
                 isPredictReady: true,
-                isLoadModelButtonDisabled: true,
+                isLoadModelButtonDisabled: true, 
+                isLoadModelDataLoading: false,             
                 X_min: Xmin,
                 X_max: Xmax,
                 y_min: ymin,
                 y_max: ymax
-            })
+            })            
         
             tfvis.show.modelSummary({ name: `Model Summary`, tab: `Model` }, model);
-            tfvis.show.layer({ name: `Layer 1`, tab: `Model Inspection` }, layer);
+            tfvis.show.layer({ name: `Layer 1`, tab: `Model Inspection` }, layer);            
+            this.plotTrendLine();
             tfvis.visor().open();
         }
     }
@@ -222,7 +234,15 @@ class App extends React.Component {
             const normalizedOutputPred = this.state.model.predict(normalizedInputPred.tensor);
             const predTensorOutput = denormalizeTensor(normalizedOutputPred, tensorymin, tensorymax);
             this.setState({ prediction: predTensorOutput.dataSync()[0] });
-        })
+        });       
+    }
+
+    plotTrendLine = async () => {
+        const tensorXmin = tf.tensor1d([this.state.X_min]);
+        const tensorXmax = tf.tensor1d([this.state.X_max]);
+        const tensorymin = tf.tensor1d([this.state.y_min]);
+        const tensorymax = tf.tensor1d([this.state.y_max]);
+        await createTrendLine(this.state.model, this.props.data[0], tensorXmin, tensorXmax, tensorymin, tensorymax);
     }
 
     renderLoader = () => {
@@ -276,6 +296,26 @@ class App extends React.Component {
         }
     }
 
+    renderLoadModelButton = () => {
+        if (this.state.isLoadModelDataLoading) {
+            return (
+                <button className="ui loading button">Loading</button>
+            )
+        } else {
+            return (
+                <button onClick={this.loadModel} className="ui button" disabled={this.state.isLoadModelButtonDisabled}>Load Model</button>
+            )
+        }
+    }
+
+    renderPredictionValue = () => {
+        if (this.state.prediction) {
+            return `$${this.state.prediction.toFixed(2)}`
+        } else {
+            return `$0.00`;
+        }    
+    }
+
     render () {
         return (
             <div className="ui container">
@@ -286,46 +326,26 @@ class App extends React.Component {
                     <button onClick={this.handleTFVIS} className="ui button">Toggle Visor</button>                   
                 </div>
                 <br /><br />
-                <div className="ui two column celled grid">
-                    <div className="column">
-                        <div className="column" style={{paddingBottom: "13px"}}>
-                            <h3>Load Data</h3> 
-                        </div>
-                        <div className="ui three column grid">
-                            <div className="column">
-                                <select onChange={this.saveModelName} className="ui dropdown">
-                                    <option value="">Load Data</option>
-                                    <option value="kc_house_prices">KC Housing Prices</option>
-                                </select>
-                            </div>
-                            <div className="column">
-                                {this.renderLoadDataButton()}
-                            </div>
-                            <div className="column"></div>
-                        </div>
-                    </div>
-                    <div className="column">
-                        <div className="column" style={{paddingBottom: "13px"}}>
-                            <h3>Plot Data</h3>
-                        </div>
-                        <div className="ui three column grid">
-                            <div className="column">
-                                <select className="ui dropdown">
-                                <option value="">Plot</option>
-                                <option value="1">Scatterplot</option>
-                                </select>
-                            </div>
-                            <div className="column">
-                                <button onClick={this.plotData} className="ui button" disabled={!this.state.isDataLoaded}>Plot Data</button>
-                            </div>
-                            <div className="column"></div> 
-                        </div>
+                <div className="ui one column celled grid">
+                    <div className="column" style={{paddingBottom: "13px"}}>
+                        <h3>Load Data</h3>                         
+                        <select onChange={this.saveModelName} className="ui dropdown">
+                            <option value="">Load Data</option>
+                            <option value="kc_house_prices">KC Housing Prices</option>
+                        </select> &nbsp;
+                        {this.renderLoadDataButton()}
+                        <h3>Plot Data</h3>                        
+                        <select className="ui dropdown">
+                        <option value="">Plot</option>
+                        <option value="1">Scatterplot</option>
+                        </select> &nbsp;
+                        <button onClick={this.plotData} className="ui button" disabled={!this.state.isDataLoaded}>Plot Data</button>
                     </div>                                    
                 </div>
                 <div className="ui one column celled grid">
                     <div className="column">
                         <h3>Split Train Test Data</h3>
-                        <button onClick={this.splitData} className="ui button" disabled={!this.state.isDataPlotted}>Split Data</button> &nbsp;
+                        <button onClick={this.splitData} className="ui button" disabled={!this.state.isDataPlotted}>{this.state.splitDataButtonText}</button> &nbsp;
                         <button onClick={this.handleTFVIS} className="ui button">Toggle Visor</button>
                     </div>                    
                 </div>
@@ -459,53 +479,32 @@ class App extends React.Component {
                         </div> 
                     </div>
                 </div> 
-                <div className="ui two column celled grid">
-                    <div className="column">
-                        <div className="column" style={{paddingBottom: "13px"}}>
-                            <h3>Model Management</h3> 
-                        </div>                        
-                        <div className="ui three column grid">
-                            <div className="column">
-                                <div className="ui input">
-                                    <input type="text" placeholder="Save model as..." ref={this.saveModelAs} />
-                                </div>
-                                <br /><br />
-                                <select onChange={this.handleLoadModelName} className="ui dropdown">
-                                    <option value="">Load Model</option>
-                                    <option value="kc_house_prices">KC House Prices</option>
-                                </select>                                                         
-                            </div>                            
-                            <div className="column">
-                            <button onClick={this.saveModel} className="ui button" disabled={!this.state.isModelSaveable}>Save Model</button>
-                            <br /><br />
-                            <button onClick={this.loadModel} className="ui button" disabled={this.state.isLoadModelButtonDisabled}>Load Model</button>
-                            </div>  
-                            <div className="column">
-                                <button onClick={this.handleTFVIS} className="ui button">Toggle Visor</button>
-                            </div>                          
-                        </div>
-                    </div>
-                    <div className="column">
-                        <div className="column" style={{paddingBottom: "13px"}}>
-                            <h3>Make Prediction</h3>
-                        </div>
-                        <div className="ui three column grid">
-                            <div className="column">
-                                <div className="ui input">
-                                    <input type="text" placeholder="Enter value..." ref={this.userPred} />
-                                </div>
-                                <br /><br />
-                                <div className="ui labeled input">
-                                    <div className="ui label">
-                                        Predicted Value
-                                    </div>
-                                    <input type="text" placeholder="predicted value" value={this.state.prediction} readOnly />
-                                </div>
-                            </div>                             
-                            <div className="column">
-                                <button onClick={this.makePrediction} className="ui button" disabled={!this.state.isPredictReady}>Predict</button>                                                              
+                <div className="ui one column celled grid">
+                    <div className="column" style={{paddingBottom: "13px"}}>
+                        <h3>Model Management</h3> 
+                        <div className="ui input">
+                            <input type="text" placeholder="Save model as..." ref={this.saveModelAs} />
+                        </div> &nbsp;
+                        <button onClick={this.saveModel} className="ui button" disabled={!this.state.isModelSaveable}>Save Model</button>
+                        <br /><br />
+                        <select onChange={this.handleLoadModelName} className="ui dropdown">
+                            <option value="">Load Model</option>
+                            <option value="kc_house_prices">KC House Prices</option>
+                        </select> &nbsp;
+                        {this.renderLoadModelButton()} 
+                        <br /><br />
+                        <button onClick={this.handleTFVIS} className="ui button">Toggle Visor</button>                                                       
+                        <h3>Make Prediction</h3>
+                        <div className="ui input">
+                            <input type="text" placeholder="Enter value..." ref={this.userPred} />
+                        </div> &nbsp;
+                        <button onClick={this.makePrediction} className="ui button" disabled={!this.state.isPredictReady}>Predict</button>
+                        <br /><br />
+                        <div className="ui labeled input">
+                            <div className="ui label">
+                                Predicted Value
                             </div>
-                            <div className="column"></div>                            
+                            <input type="text" placeholder="predicted value" value={this.renderPredictionValue()} readOnly />
                         </div>
                     </div>                                    
                 </div>                     
