@@ -18,7 +18,8 @@ class App extends React.Component {
         isDataLoading: false,
         isLoadDataButtonDisabled: true,           
         loadDataButtonText: 'Load Data',
-        splitDataButtonText: 'Split Data',       
+        splitDataButtonText: 'Split Data', 
+        loadModelButtonText: 'Load Model',      
         train_loss: '',
         val_loss: '',
         test_loss: '',
@@ -28,7 +29,7 @@ class App extends React.Component {
 
     componentDidMount() {
         this.initState();
-        tfvis.visor().close();
+        tfvis.visor().open();
     }
 
     // componentDidUpdate(object prevProps, object prevState)
@@ -55,6 +56,7 @@ class App extends React.Component {
             isPredictReady: false,
             loadDataButtonText: 'Load Data',
             splitDataButtonText: 'Split Data',
+            loadModelButtonText: 'Load Model',
             loadModelName: '',
             model: {},
             modelName: '',
@@ -124,6 +126,8 @@ class App extends React.Component {
             X_test: X_test,
             y_test: y_test
         });
+
+        tfvis.visor().close();
     }
 
     createModel = () => {
@@ -193,16 +197,15 @@ class App extends React.Component {
     }
 
     loadModel = async () => {
-        this.setState({isLoadModelDataLoading: true});
-        await this.props.getData();
         const storageKey = `localstorage://${this.state.loadModelName}`;
         const models = await tf.io.listModels();
         console.log(models);
-        const modelInfo = models[storageKey];
-
-        const {Xmin, Xmax, ymin, ymax} = JSON.parse(window.localStorage.getItem(`minmax_${this.state.loadModelName}`));
-        console.log(Xmin, Xmax, ymin, ymax);
+        const modelInfo = models[storageKey];        
         if (modelInfo) {
+            this.setState({isLoadModelDataLoading: true});
+            await this.props.getData();   
+            const {Xmin, Xmax, ymin, ymax} = JSON.parse(window.localStorage.getItem(`minmax_${this.state.loadModelName}`));
+            console.log(Xmin, Xmax, ymin, ymax);
             const model = await tf.loadLayersModel(storageKey);
             const layer = model.getLayer(undefined, 0);
             this.setState({ 
@@ -220,10 +223,16 @@ class App extends React.Component {
             tfvis.show.layer({ name: `Layer 1`, tab: `Model Inspection` }, layer);            
             this.plotTrendLine();
             tfvis.visor().open();
+        } else {
+            this.setState({ loadModelButtonText: 'Model Not Found' })
         }
     }
 
-    makePrediction = () => {   
+    makePrediction = () => {  
+        if (this.userPred.current.value < 800 || this.userPred.current.value > 16000) {
+            this.userPred.current.value = 'Invalid Square Footage';
+            return true;
+        } 
         tf.tidy(() => {
             const tensorXmin = tf.tensor1d([this.state.X_min]);
             const tensorXmax = tf.tensor1d([this.state.X_max]);
@@ -235,6 +244,10 @@ class App extends React.Component {
             const predTensorOutput = denormalizeTensor(normalizedOutputPred, tensorymin, tensorymax);
             this.setState({ prediction: predTensorOutput.dataSync()[0] });
         });       
+    }
+
+    clearInput = e => {
+        e.target.value = '';
     }
 
     plotTrendLine = async () => {
@@ -303,18 +316,23 @@ class App extends React.Component {
             )
         } else {
             return (
-                <button onClick={this.loadModel} className="ui button" disabled={this.state.isLoadModelButtonDisabled}>Load Model</button>
+                <button onClick={this.loadModel} className="ui button" disabled={this.state.isLoadModelButtonDisabled}>{this.state.loadModelButtonText}</button>
             )
         }
     }
 
     renderPredictionValue = () => {
         if (this.state.prediction) {
-            return `$${this.state.prediction.toFixed(2)}`
+            return `$${this.state.prediction
+                .toFixed()
+                .replace(/\D/g, "")
+                .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
         } else {
-            return `$0.00`;
+            return `$0`;
         }    
     }
+
+    validateS
 
     render () {
         return (
@@ -334,6 +352,10 @@ class App extends React.Component {
                             <option value="kc_house_prices">KC Housing Prices</option>
                         </select> &nbsp;
                         {this.renderLoadDataButton()}
+                    </div>
+                </div>
+                <div className="ui one column celled grid">
+                    <div className="column" style={{paddingBottom: "13px"}}>
                         <h3>Plot Data</h3>                        
                         <select className="ui dropdown">
                         <option value="">Plot</option>
@@ -418,7 +440,7 @@ class App extends React.Component {
                         <button onClick={this.handleTFVIS} className="ui button">Toggle Visor</button>
                     </div>
                 </div>
-                <div className="ui two column celled grid">                    
+                <div className="ui one column celled grid">                    
                     <div className="column" style={{paddingBottom: "13px"}}>
                         <h3>Train Model</h3> 
                         {this.renderTrainingModelButton()} &nbsp;
@@ -437,46 +459,41 @@ class App extends React.Component {
                             </div>
                             <input type="text" placeholder="validation loss" value={this.state.val_loss} readOnly />
                         </div>
-                    </div>                       
-                    <div className="column">
-                        <h3>Test Model</h3>
-                        <div className="ui three column grid">                                                        
-                            <div className="column">
-                                
-                                <div className="grouped fields">
-                                    <label>Metrics</label>
-                                    <div className="field">
-                                        <div className="ui radio checkbox">
-                                            <input type="radio" name="metrics"  />
-                                            <label>MSE</label>
-                                        </div>
-                                    </div>
-                                    <div className="field">
-                                        <div className="ui radio checkbox">
-                                            <input type="radio" name="metrics" />
-                                            <label>MAE</label>
-                                        </div>
-                                    </div>
-                                    <div className="field">
-                                    <div className="ui radio checkbox">
-                                        <input type="radio" name="metrics" />
-                                        <label>R Squared</label>
-                                    </div>
-                                    </div>                                    
+                    </div>
+                </div> 
+                <div className="ui one column celled grid">
+                    <div className="column" style={{paddingBottom: "13px"}}>   
+                        <h3>Test Model</h3>                                 
+                        <div className="grouped fields">
+                            <label>Metrics</label>
+                            <div className="field">
+                                <div className="ui radio checkbox">
+                                    <input type="radio" name="metrics"  />
+                                    <label>MSE</label>
                                 </div>
                             </div>
-                            <div className="column">
-                                {this.renderTestingModelButton()}
-                                <br /><br />
-                                <div className="ui labeled input">
-                                    <div className="ui label">
-                                        Testing Loss
-                                    </div>
-                                    <input type="text" placeholder="testing loss" value={this.state.test_loss} readOnly />
+                            <div className="field">
+                                <div className="ui radio checkbox">
+                                    <input type="radio" name="metrics" />
+                                    <label>MAE</label>
                                 </div>
                             </div>
-                            <div className="column"></div>
+                            <div className="field">
+                            <div className="ui radio checkbox">
+                                <input type="radio" name="metrics" />
+                                <label>R Squared</label>
+                            </div>
+                            </div>                                    
                         </div> 
+                        <br />                   
+                        {this.renderTestingModelButton()}
+                        <br /><br />
+                        <div className="ui labeled input">
+                            <div className="ui label">
+                                Testing Loss
+                            </div>
+                            <input type="text" placeholder="testing loss" value={this.state.test_loss} readOnly />
+                        </div>                       
                     </div>
                 </div> 
                 <div className="ui one column celled grid">
@@ -494,9 +511,15 @@ class App extends React.Component {
                         {this.renderLoadModelButton()} 
                         <br /><br />
                         <button onClick={this.handleTFVIS} className="ui button">Toggle Visor</button>                                                       
+                    </div>
+                </div>    
+                <div className="ui one column celled grid">
+                    <div className="column" style={{paddingBottom: "13px"}}>
                         <h3>Make Prediction</h3>
+                        Enter square footage between 800 and 16000
+                        <br />
                         <div className="ui input">
-                            <input type="text" placeholder="Enter value..." ref={this.userPred} />
+                            <input onFocus={this.clearInput} type="text" placeholder="Enter sq footage..." ref={this.userPred} />
                         </div> &nbsp;
                         <button onClick={this.makePrediction} className="ui button" disabled={!this.state.isPredictReady}>Predict</button>
                         <br /><br />
