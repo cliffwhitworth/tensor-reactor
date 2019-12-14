@@ -1,4 +1,4 @@
-const tf = require('@tensorflow/tfjs');
+const tf = require('@tensorflow/tfjs-node');
 
 // Optional Load the binding:
 // Use '@tensorflow/tfjs-node-gpu' if running with GPU.

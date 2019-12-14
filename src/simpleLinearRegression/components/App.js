@@ -1,10 +1,9 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { getData } from '../actions';
-import { plot, createModel, splitTrainTestData, trainModel, normalizeTensor, denormalizeTensor, createTrendLine } from './tf';
+import { openVisor, closeVisor, toggleVisor, plot, createModel, splitTrainTestData, trainModel, createTrendLine, loadSavedModel, makeModelPrediction } from './tf';
 
-const tf = require('@tensorflow/tfjs');
-const tfvis = require('@tensorflow/tfjs-vis');
+import LoadData from './LoadData';
 
 class App extends React.Component {
 
@@ -29,7 +28,7 @@ class App extends React.Component {
 
     componentDidMount() {
         this.initState();
-        tfvis.visor().open();
+        openVisor();
     }
 
     // componentDidUpdate(object prevProps, object prevState)
@@ -77,7 +76,7 @@ class App extends React.Component {
     }
 
     handleTFVIS = () => {
-        tfvis.visor().toggle();
+        toggleVisor();
     }
 
     loadData = async () => {        
@@ -105,9 +104,9 @@ class App extends React.Component {
     }
 
     plotData = () => {        
-        plot(this.props.data[0], "Square Feet");  
+        plot(this.props.data, "Square Feet");  
         this.setState({ isDataPlotted: true });
-        tfvis.visor().open();   
+        openVisor();   
     }
 
     splitData = async () => {
@@ -127,29 +126,22 @@ class App extends React.Component {
             y_test: y_test
         });
 
-        tfvis.visor().close();
+        // tfvis.visor().close();
+        closeVisor();
     }
 
     createModel = () => {
         const model = createModel();
         this.setState({ model: model, isModelCreated: true });
-        const layer = model.getLayer(undefined, 0);
-        
-        tfvis.show.modelSummary({ name: `Model Summary`, tab: `Model` }, model);
-        tfvis.show.layer({ name: `Layer 1`, tab: `Model Inspection` }, layer);
-        tfvis.visor().open();
+        openVisor();
     }
 
     trainModel = async () => {
-        tfvis.visor().setActiveTab('Visor');
-        tfvis.visor().open();
+        openVisor();
         this.setState({ isModelTraining: true })
         const { model, X_train, y_train, X_min, X_max, y_min, y_max } = this.state;
-        const tensorXmin = tf.tensor1d([X_min]);
-        const tensorXmax = tf.tensor1d([X_max]);
-        const tensorymin = tf.tensor1d([y_min]);
-        const tensorymax = tf.tensor1d([y_max]);
-        const result = await trainModel(model, X_train, y_train, this.props.data[0], tensorXmin, tensorXmax, tensorymin, tensorymax);
+
+        const result = await trainModel(model, X_train, y_train, this.props.data[0], X_min, X_max, y_min, y_max);
         const trainLoss = result.history.loss.pop();
         console.log(`Training loss: ${trainLoss}`);
 
@@ -197,17 +189,11 @@ class App extends React.Component {
     }
 
     loadModel = async () => {
-        const storageKey = `localstorage://${this.state.loadModelName}`;
-        const models = await tf.io.listModels();
-        console.log(models);
-        const modelInfo = models[storageKey];        
-        if (modelInfo) {
-            this.setState({isLoadModelDataLoading: true});
-            await this.props.getData();   
+        this.setState({isLoadModelDataLoading: true});
+        await this.props.getData();
+        const model = await loadSavedModel(this.state.loadModelName, this.props.data[0]);       
+        if (model) {   
             const {Xmin, Xmax, ymin, ymax} = JSON.parse(window.localStorage.getItem(`minmax_${this.state.loadModelName}`));
-            console.log(Xmin, Xmax, ymin, ymax);
-            const model = await tf.loadLayersModel(storageKey);
-            const layer = model.getLayer(undefined, 0);
             this.setState({ 
                 model: model,
                 isPredictReady: true,
@@ -217,33 +203,24 @@ class App extends React.Component {
                 X_max: Xmax,
                 y_min: ymin,
                 y_max: ymax
-            })            
-        
-            tfvis.show.modelSummary({ name: `Model Summary`, tab: `Model` }, model);
-            tfvis.show.layer({ name: `Layer 1`, tab: `Model Inspection` }, layer);            
-            this.plotTrendLine();
-            tfvis.visor().open();
+            });  
+            openVisor();
         } else {
-            this.setState({ loadModelButtonText: 'Model Not Found' })
+            this.setState({ 
+                loadModelButtonText: 'Model Not Found',
+                isLoadModelDataLoading: false 
+            })
         }
     }
 
-    makePrediction = () => {  
+    makePrediction = async () => {  
         if (this.userPred.current.value < 800 || this.userPred.current.value > 16000) {
             this.userPred.current.value = 'Invalid Square Footage';
             return true;
         } 
-        tf.tidy(() => {
-            const tensorXmin = tf.tensor1d([this.state.X_min]);
-            const tensorXmax = tf.tensor1d([this.state.X_max]);
-            const tensorymin = tf.tensor1d([this.state.y_min]);
-            const tensorymax = tf.tensor1d([this.state.y_max]);
-            const predTensorInput = tf.tensor1d([parseInt(this.userPred.current.value)]);
-            const normalizedInputPred = normalizeTensor(predTensorInput, tensorXmin, tensorXmax);
-            const normalizedOutputPred = this.state.model.predict(normalizedInputPred.tensor);
-            const predTensorOutput = denormalizeTensor(normalizedOutputPred, tensorymin, tensorymax);
-            this.setState({ prediction: predTensorOutput.dataSync()[0] });
-        });       
+        const {model, X_min, X_max, y_min, y_max} = this.state;
+        const prediction = await makeModelPrediction(model, this.userPred.current.value, X_min, X_max, y_min, y_max);
+        this.setState({ prediction: prediction });       
     }
 
     clearInput = e => {
@@ -251,11 +228,8 @@ class App extends React.Component {
     }
 
     plotTrendLine = async () => {
-        const tensorXmin = tf.tensor1d([this.state.X_min]);
-        const tensorXmax = tf.tensor1d([this.state.X_max]);
-        const tensorymin = tf.tensor1d([this.state.y_min]);
-        const tensorymax = tf.tensor1d([this.state.y_max]);
-        await createTrendLine(this.state.model, this.props.data[0], tensorXmin, tensorXmax, tensorymin, tensorymax);
+        const {X_min, X_max, y_min, y_max} = this.state;
+        await createTrendLine(this.state.model, this.props.data[0], X_min, X_max, y_min, y_max);
     }
 
     renderLoader = () => {
@@ -332,9 +306,10 @@ class App extends React.Component {
         }    
     }
 
-    validateS
+    // validateS
 
     render () {
+        // console.log(this.props);
         return (
             <div className="ui container">
                 <h2>Simple Linear Regression</h2> 
@@ -344,7 +319,8 @@ class App extends React.Component {
                     <button onClick={this.handleTFVIS} className="ui button">Toggle Visor</button>                   
                 </div>
                 <br /><br />
-                <div className="ui one column celled grid">
+                <LoadData />
+                {/* <div className="ui one column celled grid">
                     <div className="column" style={{paddingBottom: "13px"}}>
                         <h3>Load Data</h3>                         
                         <select onChange={this.saveModelName} className="ui dropdown">
@@ -353,7 +329,7 @@ class App extends React.Component {
                         </select> &nbsp;
                         {this.renderLoadDataButton()}
                     </div>
-                </div>
+                </div> */}
                 <div className="ui one column celled grid">
                     <div className="column" style={{paddingBottom: "13px"}}>
                         <h3>Plot Data</h3>                        
@@ -361,7 +337,7 @@ class App extends React.Component {
                         <option value="">Plot</option>
                         <option value="1">Scatterplot</option>
                         </select> &nbsp;
-                        <button onClick={this.plotData} className="ui button" disabled={!this.state.isDataLoaded}>Plot Data</button>
+                        <button onClick={this.plotData} className="ui button" disabled={!this.props.isDataLoaded}>Plot Data</button>
                     </div>                                    
                 </div>
                 <div className="ui one column celled grid">
@@ -536,8 +512,12 @@ class App extends React.Component {
     }    
 }
 
-const mapStateToProps = state => {     
-    return { data: state.data }
+const mapStateToProps = state => {  
+    // console.log(state);   
+    return { 
+        data: state.store.data,
+        isDataLoaded: state.store.isDataLoaded
+     }
 }
 
 export default connect(mapStateToProps, { getData })(App);

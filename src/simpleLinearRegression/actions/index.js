@@ -1,9 +1,16 @@
 // import axios from 'axios';
 import {
-    GET_DATA
+    GET_DATA,
+    LOAD_DATA_TYPE
 } from './types';
 
 const tf = require('@tensorflow/tfjs');
+
+export const loadData = () => {
+    return {
+      type: LOAD_DATA_TYPE
+    };
+  };
 
 export const getData = () => async (dispatch) => {
     // const response = await axios.get("http://192.168.1.223:8080/data/kc_house_data.csv");
@@ -14,7 +21,7 @@ export const getData = () => async (dispatch) => {
 const getTFData = async () => {
     // 'https://storage.googleapis.com/tfjs-examples/multivariate-linear-regression/data/boston-housing-train.csv';
 
-    const data = tf.data.csv("http://192.168.1.223:3000/data/kc_house_data.csv");
+    const data = tf.data.csv("./data/kc_house_data.csv");
     const pointsDataset = data.map(record => ({
         x: record.sqft_living,
         y: record.price,

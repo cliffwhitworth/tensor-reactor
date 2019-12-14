@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const tf = require('@tensorflow/tfjs');
+const tf = require('@tensorflow/tfjs-node');
 const tfvis = require('@tensorflow/tfjs-vis');
 
 const useResources = resource => {

@@ -1,9 +1,15 @@
-import { GET_DATA } from '../actions/types';
+import { LOAD_DATA_TYPE, GET_DATA } from '../actions/types';
 
-export default (state = [], action) => {
+const INITIAL_STATE = {
+  isDataLoaded: null
+};
+
+export default (state = INITIAL_STATE, action) => {
   switch (action.type) {
+    case LOAD_DATA_TYPE:
+      return { ...state, isDataLoaded: true };
     case GET_DATA:
-      return [ ...state,  action.payload ];
+      return { ...state,  data: action.payload };
     default:
       return state;
   }

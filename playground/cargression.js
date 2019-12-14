@@ -5,9 +5,9 @@
  * and cleaned of missing data.
  */
 
-const tf = require('@tensorflow/tfjs');
+const tf = require('@tensorflow/tfjs-node');
 const fetch = require("node-fetch");
-require('@tensorflow/tfjs-node');
+// require('@tensorflow/tfjs-node');
 
 async function getData() {
     const carsDataReq = await fetch('https://storage.googleapis.com/tfjs-tutorials/carsData.json');  

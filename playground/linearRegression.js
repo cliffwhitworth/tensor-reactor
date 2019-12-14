@@ -1,7 +1,7 @@
 // https://github.com/priyesh18/tensorflowjs-model
 
-const tf = require('@tensorflow/tfjs');
-require('@tensorflow/tfjs-node');
+const tf = require('@tensorflow/tfjs-node');
+// require('@tensorflow/tfjs-node');
 
 const normalizeTensor = tensor => {
     // min max normalization

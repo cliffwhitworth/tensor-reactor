@@ -1,5 +1,5 @@
 
-const tf = require('@tensorflow/tfjs');
+const tf = require('@tensorflow/tfjs-node');
 
 const nDetect = s => {
     let rtn = '';
