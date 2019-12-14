@@ -1,9 +1,12 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { getData } from '../actions';
-import { openVisor, closeVisor, toggleVisor, plot, createModel, splitTrainTestData, trainModel, createTrendLine, loadSavedModel, makeModelPrediction } from './tf';
+import { openVisor, toggleVisor, createModel, trainModel, createTrendLine, loadSavedModel, makeModelPrediction } from './tf';
 
 import LoadData from './LoadData';
+import PlotData from './PlotData';
+import SplitData from './SplitData';
+import CreateModel from './CreateModel';
 
 class App extends React.Component {
 
@@ -13,10 +16,7 @@ class App extends React.Component {
         this.userPred = React.createRef();       
     }
 
-    state = {
-        isDataLoading: false,
-        isLoadDataButtonDisabled: true,           
-        loadDataButtonText: 'Load Data',
+    state = {    
         splitDataButtonText: 'Split Data', 
         loadModelButtonText: 'Load Model',      
         train_loss: '',
@@ -40,11 +40,8 @@ class App extends React.Component {
 
     initState = () => {
         this.setState({ 
-            isDataLoading: false,
-            isLoadDataButtonDisabled: true, 
             isLoadModelButtonDisabled: true,
             isLoadModelDataLoading: false,       
-            isDataLoaded: false,
             isDataPlotted: false,
             isDataSplit: false,
             isModelCreated: false,
@@ -53,7 +50,6 @@ class App extends React.Component {
             isModelTesting: false,
             isModelSaveable: false,
             isPredictReady: false,
-            loadDataButtonText: 'Load Data',
             splitDataButtonText: 'Split Data',
             loadModelButtonText: 'Load Model',
             loadModelName: '',
@@ -79,23 +75,6 @@ class App extends React.Component {
         toggleVisor();
     }
 
-    loadData = async () => {        
-        this.setState({ isDataLoading: true });
-        await this.props.getData();
-        this.setState({
-            loadDataButtonText: 'Data Loaded',
-            isDataLoaded: true,
-            isDataLoading: false
-        });
-    }
-
-    saveModelName = e => {
-        this.setState({ 
-            modelName: e.target.value,
-            isLoadDataButtonDisabled: e.target.value?false:true 
-        })
-    }
-
     handleLoadModelName = e => {
         this.setState({ 
             loadModelName: e.target.value,
@@ -103,32 +82,32 @@ class App extends React.Component {
         });
     }
 
-    plotData = () => {        
-        plot(this.props.data, "Square Feet");  
-        this.setState({ isDataPlotted: true });
-        openVisor();   
-    }
+    // plotData = () => {        
+    //     plot(this.props.data, "Square Feet");  
+    //     this.setState({ isDataPlotted: true });
+    //     openVisor();   
+    // }
 
-    splitData = async () => {
-        // const [X_train, y_train, X_test, y_test] = await splitTrainTestData(this.props.data[0]);
-        const [X_min, X_max, y_min, y_max, X_train, y_train, X_test, y_test] = await splitTrainTestData(this.props.data[0]);
+    // // splitData = async () => {
+    // //     // const [X_train, y_train, X_test, y_test] = await splitTrainTestData(this.props.data[0]);
+    // //     const [X_min, X_max, y_min, y_max, X_train, y_train, X_test, y_test] = await splitTrainTestData(this.props.data[0]);
         
-        this.setState({
-            isDataSplit: true,
-            splitDataButtonText: 'Data Split',
-            X_min: X_min,
-            X_max: X_max,
-            y_min: y_min,
-            y_max: y_max,
-            X_train: X_train,
-            y_train: y_train,
-            X_test: X_test,
-            y_test: y_test
-        });
+    // //     this.setState({
+    // //         isDataSplit: true,
+    // //         splitDataButtonText: 'Data Split',
+    // //         X_min: X_min,
+    // //         X_max: X_max,
+    // //         y_min: y_min,
+    // //         y_max: y_max,
+    // //         X_train: X_train,
+    // //         y_train: y_train,
+    // //         X_test: X_test,
+    // //         y_test: y_test
+    // //     });
 
-        // tfvis.visor().close();
-        closeVisor();
-    }
+    // //     // tfvis.visor().close();
+    // //     closeVisor();
+    // // }
 
     createModel = () => {
         const model = createModel();
@@ -232,32 +211,32 @@ class App extends React.Component {
         await createTrendLine(this.state.model, this.props.data[0], X_min, X_max, y_min, y_max);
     }
 
-    renderLoader = () => {
-        if (this.state.isLoading) {
-            return (
-                <div className="ui segment">
-                    <div className="ui active dimmer">
-                        <div className="ui text loader">
-                            {this.state.loadingMsg}
-                        </div>
-                    </div>
-                    <br /><br />
-                </div>
-            )
-        }
-    }
+    // renderLoader = () => {
+    //     if (this.state.isLoading) {
+    //         return (
+    //             <div className="ui segment">
+    //                 <div className="ui active dimmer">
+    //                     <div className="ui text loader">
+    //                         {this.state.loadingMsg}
+    //                     </div>
+    //                 </div>
+    //                 <br /><br />
+    //             </div>
+    //         )
+    //     }
+    // }
 
-    renderLoadDataButton = () => {
-        if (this.state.isDataLoading) {
-            return (
-                <button className="ui loading button">Loading</button>
-            )
-        } else {
-            return (
-                <button onClick={this.loadData}  className="ui button" disabled={this.state.isLoadDataButtonDisabled}>{this.state.loadDataButtonText}</button>
-            )
-        }
-    }
+    // renderLoadDataButton = () => {
+    //     if (this.state.isDataLoading) {
+    //         return (
+    //             <button className="ui loading button">Loading</button>
+    //         )
+    //     } else {
+    //         return (
+    //             <button onClick={this.loadData}  className="ui button" disabled={this.state.isLoadDataButtonDisabled}>{this.state.loadDataButtonText}</button>
+    //         )
+    //     }
+    // }
 
     renderTrainingModelButton = () => {
         if (this.state.isModelTraining) {
@@ -266,7 +245,7 @@ class App extends React.Component {
             )
         } else {
             return (
-                <button onClick={this.trainModel} className="ui button" disabled={!this.state.isModelCreated}>Train Model</button>
+                <button onClick={this.trainModel} className="ui button" disabled={!this.props.isModelCreated}>Train Model</button>
             )
         }
     }
@@ -320,6 +299,9 @@ class App extends React.Component {
                 </div>
                 <br /><br />
                 <LoadData />
+                <PlotData />
+                <SplitData />
+                <CreateModel />
                 {/* <div className="ui one column celled grid">
                     <div className="column" style={{paddingBottom: "13px"}}>
                         <h3>Load Data</h3>                         
@@ -330,7 +312,7 @@ class App extends React.Component {
                         {this.renderLoadDataButton()}
                     </div>
                 </div> */}
-                <div className="ui one column celled grid">
+                {/* <div className="ui one column celled grid">
                     <div className="column" style={{paddingBottom: "13px"}}>
                         <h3>Plot Data</h3>                        
                         <select className="ui dropdown">
@@ -339,15 +321,15 @@ class App extends React.Component {
                         </select> &nbsp;
                         <button onClick={this.plotData} className="ui button" disabled={!this.props.isDataLoaded}>Plot Data</button>
                     </div>                                    
-                </div>
-                <div className="ui one column celled grid">
+                </div> */}
+                {/* <div className="ui one column celled grid">
                     <div className="column">
                         <h3>Split Train Test Data</h3>
-                        <button onClick={this.splitData} className="ui button" disabled={!this.state.isDataPlotted}>{this.state.splitDataButtonText}</button> &nbsp;
+                        <button onClick={this.splitData} className="ui button" disabled={!this.props.isDataPlotted}>{this.state.splitDataButtonText}</button> &nbsp;
                         <button onClick={this.handleTFVIS} className="ui button">Toggle Visor</button>
                     </div>                    
-                </div>
-                <div className="ui one column celled grid">
+                </div> */}
+                {/* <div className="ui one column celled grid">
                     <div className="column">
                         <h3>Create Model</h3>
                         <div className="ui five column grid">
@@ -385,7 +367,7 @@ class App extends React.Component {
                                 <div className="ui input">
                                     <input type="text" placeholder="Enter # of epocs..." />
                                 </div>
-                                {/* <h4>Loss Function</h4>
+                                <h4>Loss Function</h4>
                                 <div className="grouped fields">
                                     <label>Choose loss function</label>
                                     <div className="field">
@@ -406,16 +388,16 @@ class App extends React.Component {
                                         <label>RMSE</label>
                                     </div>
                                     </div>
-                                </div> */}
+                                </div> 
                             </div>                            
                             <div className="column"></div>
                         </div>
                     </div>
                     <div className="column">
-                        <button onClick={this.createModel} className="ui button" disabled={!this.state.isDataSplit}>Create Model</button>
+                        <button onClick={this.createModel} className="ui button" disabled={!this.props.isDataSplit}>Create Model</button>
                         <button onClick={this.handleTFVIS} className="ui button">Toggle Visor</button>
                     </div>
-                </div>
+                </div> */}
                 <div className="ui one column celled grid">                    
                     <div className="column" style={{paddingBottom: "13px"}}>
                         <h3>Train Model</h3> 
@@ -513,10 +495,10 @@ class App extends React.Component {
 }
 
 const mapStateToProps = state => {  
-    // console.log(state);   
+    console.log(state);   
     return { 
         data: state.store.data,
-        isDataLoaded: state.store.isDataLoaded
+        isModelCreated: state.store.isModelCreated
      }
 }
 

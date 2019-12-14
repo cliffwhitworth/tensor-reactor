@@ -1,2 +1,9 @@
 export const GET_DATA = 'GET_DATA';
-export const LOAD_DATA_TYPE = 'LOAD_DATA_TYPE';
+export const IS_DATA_LOADED = 'IS_DATA_LOADED';
+export const MODEL_NAME = 'MODEL_NAME';
+export const IS_DATA_PLOTTED = 'IS_DATA_PLOTTED';
+export const IS_DATA_SPLIT = 'IS_DATA_SPLIT';
+export const MIN_MAX_VALUES = 'MIN_MAX_VALUES';
+export const TRAIN_TEST_TENSORS = 'TRAIN_TEST_TENSORS';
+export const IS_MODEL_CREATED = 'IS_MODEL_CREATED';
+export const CREATE_MODEL = 'CREATE_MODEL';

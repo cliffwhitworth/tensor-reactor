@@ -1,16 +1,57 @@
 // import axios from 'axios';
 import {
     GET_DATA,
-    LOAD_DATA_TYPE
+    IS_DATA_LOADED,
+    MODEL_NAME,
+    IS_DATA_PLOTTED,
+    IS_DATA_SPLIT,
+    MIN_MAX_VALUES,
+    TRAIN_TEST_TENSORS,
+    CREATE_MODEL,
+    IS_MODEL_CREATED
 } from './types';
 
 const tf = require('@tensorflow/tfjs');
 
+export const createModelState = () => {
+    return {
+      type: IS_MODEL_CREATED
+    };
+};
+
 export const loadData = () => {
     return {
-      type: LOAD_DATA_TYPE
+      type: IS_DATA_LOADED
     };
-  };
+};
+
+export const plotData = () => {
+    return {
+      type: IS_DATA_PLOTTED
+    };
+};
+
+export const splitData = () => {
+    return {
+      type: IS_DATA_SPLIT
+    };
+};
+
+export const createModelAction = model => dispatch => {
+    dispatch({ type: CREATE_MODEL, payload: model })
+}
+
+export const setModelName = name => dispatch => {
+    dispatch({ type: MODEL_NAME, payload: name });
+};
+
+export const fillMinMaxObject = store => dispatch => {
+    dispatch({ type: MIN_MAX_VALUES, payload: store });
+};
+
+export const fillTrainTestObject = store => dispatch => {
+    dispatch({ type: TRAIN_TEST_TENSORS, payload: store });
+};
 
 export const getData = () => async (dispatch) => {
     // const response = await axios.get("http://192.168.1.223:8080/data/kc_house_data.csv");

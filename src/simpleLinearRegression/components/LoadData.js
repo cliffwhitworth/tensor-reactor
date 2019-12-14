@@ -1,15 +1,13 @@
 import React from 'react';
 import { connect } from 'react-redux';
-import { loadData, getData } from '../actions';
+import { loadData, getData, setModelName } from '../actions';
 
 class LoadData extends React.Component {
 
     state = {
         isLoadDataButtonDisabled: true, 
-        isDataLoaded: false,
         isDataLoading: false,
-        loadDataButtonText: 'Load Data',
-        modelName: ''
+        loadDataButtonText: 'Load Data'
     }
 
     loadData = async () => {        
@@ -24,8 +22,8 @@ class LoadData extends React.Component {
     }
 
     saveModelName = e => {
+        this.props.setModelName(e.target.value);
         this.setState({ 
-            modelName: e.target.value,
             isLoadDataButtonDisabled: e.target.value?false:true 
         })
     }
@@ -58,10 +56,10 @@ class LoadData extends React.Component {
     }
 }
 
-const mapStateToProps = state => {   
+const mapStateToProps = state => {  
     return { 
         data: state.data
     }
 }
 
-export default connect(mapStateToProps, { loadData, getData })(LoadData);
+export default connect(mapStateToProps, { loadData, getData, setModelName })(LoadData);
