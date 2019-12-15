@@ -6,7 +6,10 @@ import { IS_DATA_LOADED,
           MIN_MAX_VALUES,
           TRAIN_TEST_TENSORS,
           IS_MODEL_CREATED,
-          CREATE_MODEL
+          CREATE_MODEL,
+          IS_MODEL_TRAINED,
+          IS_MODEL_SAVEABLE,
+          IS_PREDICT_READY
          } from '../actions/types';
 
 const INITIAL_STATE = {
@@ -18,15 +21,24 @@ const INITIAL_STATE = {
   minMaxValues: {},
   trainTestTensors: {},
   isModelCreated: null,
-  createModelAction: {}
+  isModelTrained: null,
+  model: {},
+  isModelSaveable: null,
+  isPredictReady: null
 };
 
 export default (state = INITIAL_STATE, action) => {
   switch (action.type) {
+    case IS_MODEL_SAVEABLE:
+      return { ...state, isModelSaveable: true };
+    case IS_PREDICT_READY:
+      return { ...state, isPredictReady: true };
+    case IS_MODEL_TRAINED:
+      return { ...state, isModelTrained: true };
     case CREATE_MODEL:
-      return { ...state, createModelAction: action.payload };
+      return { ...state, model: action.payload };
     case IS_MODEL_CREATED:
-      return { ...state, isModelCreated: true }
+      return { ...state, isModelCreated: true };
     case IS_DATA_LOADED:
       return { ...state, isDataLoaded: true };
     case GET_DATA:

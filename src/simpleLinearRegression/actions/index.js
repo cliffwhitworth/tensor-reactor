@@ -8,10 +8,31 @@ import {
     MIN_MAX_VALUES,
     TRAIN_TEST_TENSORS,
     CREATE_MODEL,
-    IS_MODEL_CREATED
+    IS_MODEL_CREATED,
+    IS_MODEL_TRAINED,
+    IS_MODEL_SAVEABLE,
+    IS_PREDICT_READY
 } from './types';
 
 const tf = require('@tensorflow/tfjs');
+
+export const createSaveableModelState = () => {
+    return {
+      type: IS_MODEL_SAVEABLE
+    };
+};
+
+export const createPredictReadyState = () => {
+    return {
+      type: IS_PREDICT_READY
+    };
+};
+
+export const createTrainedModelState = () => {
+    return {
+      type: IS_MODEL_TRAINED
+    };
+};
 
 export const createModelState = () => {
     return {

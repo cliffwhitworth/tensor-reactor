@@ -1,12 +1,14 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { getData } from '../actions';
-import { openVisor, toggleVisor, createModel, trainModel, createTrendLine, loadSavedModel, makeModelPrediction } from './tf';
+import { openVisor, toggleVisor, createTrendLine, loadSavedModel, makeModelPrediction } from './tf';
 
 import LoadData from './LoadData';
 import PlotData from './PlotData';
 import SplitData from './SplitData';
 import CreateModel from './CreateModel';
+import TrainModel from './TrainModel';
+import TestModel from './TestModel';
 
 class App extends React.Component {
 
@@ -75,12 +77,12 @@ class App extends React.Component {
         toggleVisor();
     }
 
-    handleLoadModelName = e => {
-        this.setState({ 
-            loadModelName: e.target.value,
-            isLoadModelButtonDisabled: e.target.value?false:true
-        });
-    }
+    // handleLoadModelName = e => {
+    //     this.setState({ 
+    //         loadModelName: e.target.value,
+    //         isLoadModelButtonDisabled: e.target.value?false:true
+    //     });
+    // }
 
     // plotData = () => {        
     //     plot(this.props.data, "Square Feet");  
@@ -109,46 +111,48 @@ class App extends React.Component {
     // //     closeVisor();
     // // }
 
-    createModel = () => {
-        const model = createModel();
-        this.setState({ model: model, isModelCreated: true });
-        openVisor();
-    }
+    // createModel = () => {
+    //     const model = createModel();
+    //     this.setState({ model: model, isModelCreated: true });
+    //     openVisor();
+    // }
 
-    trainModel = async () => {
-        openVisor();
-        this.setState({ isModelTraining: true })
-        const { model, X_train, y_train, X_min, X_max, y_min, y_max } = this.state;
+    // trainModel = async () => {
+    //     openVisor();
+    //     this.setState({ isModelTraining: true })
+    //     // const { model, X_train, y_train, X_min, X_max, y_min, y_max } = this.state;
+    //     const model = this.props.model;
+    //     const { X_min, X_max, y_min, y_max } = this.props.minMaxValues;
+    //     const {X_train, y_train} = this.props.trainTestTensors;
+    //     const result = await trainModel(model, X_train, y_train, this.props.data, X_min, X_max, y_min, y_max);
+    //     const trainLoss = result.history.loss.pop();
+    //     console.log(`Training loss: ${trainLoss}`);
 
-        const result = await trainModel(model, X_train, y_train, this.props.data[0], X_min, X_max, y_min, y_max);
-        const trainLoss = result.history.loss.pop();
-        console.log(`Training loss: ${trainLoss}`);
-
-        const valLoss = result.history.val_loss.pop();
-        console.log(`Validation loss: ${valLoss}`); 
+    //     const valLoss = result.history.val_loss.pop();
+    //     console.log(`Validation loss: ${valLoss}`); 
         
-        this.setState({
-            isModelTraining: false,
-            isModelTrained: true, 
-            train_loss: trainLoss,
-            val_loss: valLoss
-        });
-    }
+    //     this.setState({
+    //         isModelTraining: false,
+    //         isModelTrained: true, 
+    //         train_loss: trainLoss,
+    //         val_loss: valLoss
+    //     });
+    // }
 
-    testModel = async () => {
-        this.setState({ isModelTesting: true });
-        const { model, X_test, y_test } = this.state;
-        const testTensor = await model.evaluate(X_test, y_test);
-        const testLoss = testTensor.dataSync();
-        console.log(`Testing loss: ${testLoss}`);
+    // testModel = async () => {
+    //     this.setState({ isModelTesting: true });
+    //     const { model, X_test, y_test } = this.state;
+    //     const testTensor = await model.evaluate(X_test, y_test);
+    //     const testLoss = testTensor.dataSync();
+    //     console.log(`Testing loss: ${testLoss}`);
 
-        this.setState({ 
-            isModelTesting: false,
-            isModelSaveable: true,
-            isPredictReady: true,
-            test_loss: testLoss
-        });
-    }
+    //     this.setState({ 
+    //         isModelTesting: false,
+    //         isModelSaveable: true,
+    //         isPredictReady: true,
+    //         test_loss: testLoss
+    //     });
+    // }
 
     saveModel = async () => {
         console.log(this.saveModelAs.current.value);
@@ -238,17 +242,17 @@ class App extends React.Component {
     //     }
     // }
 
-    renderTrainingModelButton = () => {
-        if (this.state.isModelTraining) {
-            return (
-                <button className="ui loading button">Loading</button>
-            )
-        } else {
-            return (
-                <button onClick={this.trainModel} className="ui button" disabled={!this.props.isModelCreated}>Train Model</button>
-            )
-        }
-    }
+    // renderTrainingModelButton = () => {
+    //     if (this.state.isModelTraining) {
+    //         return (
+    //             <button className="ui loading button">Loading</button>
+    //         )
+    //     } else {
+    //         return (
+    //             <button onClick={this.trainModel} className="ui button" disabled={!this.props.isModelCreated}>Train Model</button>
+    //         )
+    //     }
+    // }
 
     renderTestingModelButton = () => {
         if (this.state.isModelTesting) {
@@ -257,7 +261,7 @@ class App extends React.Component {
             )
         } else {
             return (
-                <button onClick={this.testModel} className="ui button" disabled={!this.state.isModelTrained}>Test Model</button>
+                <button onClick={this.testModel} className="ui button" disabled={!this.props.isModelTrained}>Test Model</button>
             )
         }
     }
@@ -302,6 +306,8 @@ class App extends React.Component {
                 <PlotData />
                 <SplitData />
                 <CreateModel />
+                <TrainModel />
+                <TestModel />
                 {/* <div className="ui one column celled grid">
                     <div className="column" style={{paddingBottom: "13px"}}>
                         <h3>Load Data</h3>                         
@@ -398,7 +404,7 @@ class App extends React.Component {
                         <button onClick={this.handleTFVIS} className="ui button">Toggle Visor</button>
                     </div>
                 </div> */}
-                <div className="ui one column celled grid">                    
+                {/* <div className="ui one column celled grid">                    
                     <div className="column" style={{paddingBottom: "13px"}}>
                         <h3>Train Model</h3> 
                         {this.renderTrainingModelButton()} &nbsp;
@@ -418,8 +424,8 @@ class App extends React.Component {
                             <input type="text" placeholder="validation loss" value={this.state.val_loss} readOnly />
                         </div>
                     </div>
-                </div> 
-                <div className="ui one column celled grid">
+                </div>  */}
+                {/* <div className="ui one column celled grid">
                     <div className="column" style={{paddingBottom: "13px"}}>   
                         <h3>Test Model</h3>                                 
                         <div className="grouped fields">
@@ -453,7 +459,7 @@ class App extends React.Component {
                             <input type="text" placeholder="testing loss" value={this.state.test_loss} readOnly />
                         </div>                       
                     </div>
-                </div> 
+                </div>  */}
                 <div className="ui one column celled grid">
                     <div className="column" style={{paddingBottom: "13px"}}>
                         <h3>Model Management</h3> 
@@ -498,7 +504,11 @@ const mapStateToProps = state => {
     console.log(state);   
     return { 
         data: state.store.data,
-        isModelCreated: state.store.isModelCreated
+        isModelCreated: state.store.isModelCreated,
+        model: state.store.model,
+        minMaxValues: state.store.minMaxValues,
+        trainTestTensors: state.store.trainTestTensors,
+        isModelTrained: state.store.isModelTrained        
      }
 }
 

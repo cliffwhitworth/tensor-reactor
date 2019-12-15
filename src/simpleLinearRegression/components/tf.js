@@ -145,8 +145,7 @@ export const createModel = () => {
 };
 
 export const trainModel = (model, x, y, data, X_min, X_max, y_min, y_max) => {
-
-    
+   
     console.log("Number of tensors in memory: %s", tf.memory().numTensors);
     tfvis.visor().setActiveTab('Visor');
     // const { onBatchEnd, onEpochEnd } = tfvis.show.fitCallbacks (
@@ -158,24 +157,24 @@ export const trainModel = (model, x, y, data, X_min, X_max, y_min, y_max) => {
 
     console.log("Number of tensors in memory: %s", tf.memory().numTensors);
     
-        return model.fit(x, y, {
-            batchSize: 32, // default
-            epochs: 10,
-            validationSplit: 0.2,
-            // callbacks: tfvis.show.fitCallbacks(
-            //     { name: 'Training Performance' },
-            //     ['loss']
-            // )
-            callbacks: {
-                // onEpochEnd: (epoch, log) => console.log(`Epoch ${epoch}: loss = ${log.loss}`)
-                // onEpochEnd, onBatchEnd, 
-                onEpochEnd, 
-                onEpochBegin: async () => {
-                    console.log("Number of tensors in memory: %s", tf.memory().numTensors);
-                    createTrendLine(model, data, X_min, X_max, y_min, y_max)
-                }           
-            }        
-        });
+    return model.fit(x, y, {
+        batchSize: 32, // default
+        epochs: 10,
+        validationSplit: 0.2,
+        // callbacks: tfvis.show.fitCallbacks(
+        //     { name: 'Training Performance' },
+        //     ['loss']
+        // )
+        callbacks: {
+            // onEpochEnd: (epoch, log) => console.log(`Epoch ${epoch}: loss = ${log.loss}`)
+            // onEpochEnd, onBatchEnd, 
+            onEpochEnd, 
+            onEpochBegin: async () => {
+                console.log("Number of tensors in memory: %s", tf.memory().numTensors);
+                createTrendLine(model, data, X_min, X_max, y_min, y_max)
+            }           
+        }        
+    });
 }
 
 export const loadSavedModel = async (modelName, points) => {
