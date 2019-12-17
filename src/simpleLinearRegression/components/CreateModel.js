@@ -1,6 +1,6 @@
 import React from 'react';
 import { connect } from 'react-redux';
-import { createModelAction, createModelState } from '../actions';
+import { dispatchModel, createModelState } from '../actions';
 import { openVisor, toggleVisor, createModel } from './tf';
 
 class CreateModel extends React.Component {
@@ -12,7 +12,7 @@ class CreateModel extends React.Component {
     createModel = async () => {
         this.props.createModelState();        
         const model = await createModel();
-        this.props.createModelAction(model);
+        this.props.dispatchModel(model);
         openVisor();
     }
 
@@ -97,4 +97,4 @@ const mapStateToProps = state => {
     }
 }
 
-export default connect(mapStateToProps, { createModelAction, createModelState })(CreateModel);
+export default connect(mapStateToProps, { dispatchModel, createModelState })(CreateModel);

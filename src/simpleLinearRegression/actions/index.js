@@ -58,7 +58,7 @@ export const splitData = () => {
     };
 };
 
-export const createModelAction = model => dispatch => {
+export const dispatchModel = model => dispatch => {
     dispatch({ type: CREATE_MODEL, payload: model })
 }
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { connect } from 'react-redux';
-import { createModelAction, createTrainedModelState } from '../actions';
+import { dispatchModel, createTrainedModelState } from '../actions';
 import { openVisor, toggleVisor, trainModel } from './tf';
 
 class TrainModel extends React.Component {
@@ -23,7 +23,7 @@ class TrainModel extends React.Component {
         const { X_min, X_max, y_min, y_max } = this.props.minMaxValues;
         const {X_train, y_train} = this.props.trainTestTensors;
         const result = await trainModel(model, X_train, y_train, this.props.data, X_min, X_max, y_min, y_max);
-        this.props.createModelAction(model);
+        // this.props.createModelAction(model);
         const trainLoss = result.history.loss.pop();
         console.log(`Training loss: ${trainLoss}`);
 
@@ -89,4 +89,4 @@ const mapStateToProps = state => {
      }
 }
 
-export default connect(mapStateToProps, { createModelAction, createTrainedModelState })(TrainModel);
+export default connect(mapStateToProps, { dispatchModel, createTrainedModelState })(TrainModel);

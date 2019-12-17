@@ -177,18 +177,26 @@ export const trainModel = (model, x, y, data, X_min, X_max, y_min, y_max) => {
     });
 }
 
+export const doesModelExist = async modelName => {
+    const storageKey = `localstorage://${modelName}`;
+    const models = await tf.io.listModels();
+    const modelInfo = models[storageKey]; 
+    return modelInfo;
+}
+
 export const loadSavedModel = async (modelName, points) => {
     const storageKey = `localstorage://${modelName}`;
     const models = await tf.io.listModels();
     const modelInfo = models[storageKey];   
-    if (modelInfo) {    
-        const {Xmin, Xmax, ymin, ymax} = JSON.parse(window.localStorage.getItem(`minmax_${modelName}`));
-        console.log(Xmin, Xmax, ymin, ymax);
+    if (modelInfo) { 
+        const {X_min, X_max, y_min, y_max} = JSON.parse(window.localStorage.getItem(`minmax_${modelName}`));
+        console.log(X_min, X_max, y_min, y_max);
         const model = await tf.loadLayersModel(storageKey);
         const layer = model.getLayer(undefined, 0);        
         tfvis.show.modelSummary({ name: `Model Summary`, tab: `Model` }, model);
         tfvis.show.layer({ name: `Layer 1`, tab: `Model Inspection` }, layer);
-        createTrendLine(model, points, Xmin, Xmax, ymin, ymax);      
+        createTrendLine(model, points, X_min, X_max, y_min, y_max);      
+        console.log("Number of tensors in memory after disposal: %s", tf.memory().numTensors);
         return model;        
     } else {
         return null;
