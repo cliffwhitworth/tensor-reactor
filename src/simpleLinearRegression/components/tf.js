@@ -184,12 +184,48 @@ export const doesModelExist = async modelName => {
     return modelInfo;
 }
 
-export const loadSavedModel = async (modelName, points) => {
+export const testLoadedModel = async modelName => {
+
+    // const storageKey = `localstorage://${modelName}`;
+    // const model = await tf.loadLayersModel(storageKey);
+    // const layer = model.getLayer(undefined, 0);        
+    // tfvis.show.modelSummary({ name: `Model Summary`, tab: `Model` }, model);
+    // tfvis.show.layer({ name: `Layer 1`, tab: `Model Inspection` }, layer);
+    // return model;
+
+    const model = tf.sequential();
+
+    model.add(tf.layers.dense({
+        units: 1,
+        useBias: true,
+        activation: 'linear',
+        inputDim: 1,
+    }));
+
+    const optimizer = tf.train.sgd(0.1);
+    model.compile({
+        loss: 'meanSquaredError',
+        optimizer,
+    });
+
+    const layer = model.getLayer(undefined, 0);
+    tfvis.show.modelSummary({ name: `Model Summary`, tab: `Model` }, model);
+    tfvis.show.layer({ name: `Layer 1`, tab: `Model Inspection` }, layer);
+        
+    return model;
+}
+
+export const loadModelNames = async () => {
+    const models = await tf.io.listModels();
+    return models;
+}
+
+export const loadSavedModel = async (modelName, points, minMaxValues) => {
     const storageKey = `localstorage://${modelName}`;
     const models = await tf.io.listModels();
     const modelInfo = models[storageKey];   
     if (modelInfo) { 
-        const {X_min, X_max, y_min, y_max} = JSON.parse(window.localStorage.getItem(`minmax_${modelName}`));
+        const {X_min, X_max, y_min, y_max} = minMaxValues;
         console.log(X_min, X_max, y_min, y_max);
         const model = await tf.loadLayersModel(storageKey);
         const layer = model.getLayer(undefined, 0);        

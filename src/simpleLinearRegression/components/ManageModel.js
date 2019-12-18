@@ -1,7 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { getData, dispatchModel, createPredictReadyState, fillMinMaxObject } from '../actions';
-import { openVisor, toggleVisor, loadSavedModel, doesModelExist  } from './tf';
+import { openVisor, toggleVisor, loadSavedModel, doesModelExist, testLoadedModel, loadModelNames } from './tf';
 
 class ManageModel extends React.Component {
 
@@ -10,10 +10,16 @@ class ManageModel extends React.Component {
         this.saveModelAs = React.createRef();      
     }
 
+    componentDidMount() {
+        this.getModelNames();
+    }
+
     state = { 
             isLoadModelDataLoading: false,
             loadModelButtonText: 'Load Model',
-            isLoadModelButtonDisabled: true
+            isLoadModelButtonDisabled: true,
+            dateModelSaved: '',
+            modelNames: {}
         }
 
     handleTFVIS = () => {
@@ -30,22 +36,43 @@ class ManageModel extends React.Component {
     saveModel = async () => {
         console.log(this.saveModelAs.current.value);
         const modelName = this.saveModelAs.current.value?this.saveModelAs.current.value:this.props.modelName;
-        console.log(modelName);
         const savedModel = await this.props.model.save(`localstorage://${modelName}`);
         console.log(savedModel.modelArtifactsInfo);
-        
-        window.localStorage.setItem(`minmax_${modelName}`, JSON.stringify(this.props.minMaxValues));
+        this.setState({
+            dateModelSaved: `Model Saved: ${savedModel.modelArtifactsInfo.dateSaved}`
+        });
+        const modelMetaData = JSON.parse(window.localStorage.getItem(`tensorflowjs_models/${modelName}/model_metadata`));
+        modelMetaData['minMaxValues'] = this.props.minMaxValues;
+        window.localStorage.setItem(`tensorflowjs_models/${modelName}/model_metadata`, JSON.stringify(modelMetaData));
+    }
+
+    testModel = async () => {
+        const model = await testLoadedModel(this.state.loadModelName);
+        const savedModel = await model.save(`localstorage://${this.state.loadModelName}`);
+        console.log(savedModel.modelArtifactsInfo.dateSaved);
+        this.setState({
+            dateModelSaved: `Model Saved: ${savedModel.modelArtifactsInfo.dateSaved}`
+        })
+        // const modelMetaData = JSON.parse(window.localStorage.getItem('tensorflowjs_models/kc_house_prices/model_metadata'));
+        // console.log(modelMetaData);
+        // modelMetaData['misc'] = {'name': 'hello world'};
+        // window.localStorage.setItem('tensorflowjs_models/kc_house_prices/model_metadata', JSON.stringify(modelMetaData));            
+        // console.log(savedModel);
+        // const miscInfo = JSON.parse(window.localStorage.getItem('tensorflowjs_models/kc_house_prices/model_metadata'));
+        // console.log(miscInfo);
+        // console.log(miscInfo.misc);
+
     }
 
     loadModel = async () => {
         this.setState({isLoadModelDataLoading: true});                 
-        if (doesModelExist(this.state.loadModelName)) {   
+        if (doesModelExist(this.state.loadModelName)) {           
+            const modelMetaData = JSON.parse(window.localStorage.getItem(`tensorflowjs_models/${this.state.loadModelName}/model_metadata`));
+            const minMaxValues = modelMetaData.minMaxValues;
             await this.props.getData();
-            const {X_min, X_max, y_min, y_max} = JSON.parse(window.localStorage.getItem(`minmax_${this.state.loadModelName}`));            
             this.props.createPredictReadyState();
-            const minMaxValues = { 'X_min': X_min, 'X_max': X_max, 'y_min': y_min, 'y_max': y_max };
             this.props.fillMinMaxObject(minMaxValues);
-            const model = await loadSavedModel(this.state.loadModelName, this.props.data);
+            const model = await loadSavedModel(this.state.loadModelName, this.props.data, minMaxValues);
             this.props.dispatchModel(model);
             this.setState({                 
                 isLoadModelButtonDisabled: true, 
@@ -61,6 +88,11 @@ class ManageModel extends React.Component {
         }
     }
 
+    getModelNames = async () => {
+        const models = await loadModelNames();
+        this.setState({ modelNames: models });
+    }
+
     renderLoadModelButton = () => {
         if (this.state.isLoadModelDataLoading) {
             return (
@@ -73,7 +105,15 @@ class ManageModel extends React.Component {
         }
     }
 
-    render() {
+    render() { 
+        let optionItems = '';
+        if(Object.keys(this.state.modelNames)) {
+            let names = this.state.modelNames;
+            optionItems = Object.keys(names).map((name) =>
+                <option key={name.replace('localstorage://', '')}>{name.replace('localstorage://', '')}</option>
+            );
+        }        
+
         return (
             <div className="ui one column celled grid">
                 <div className="column" style={{paddingBottom: "13px"}}>
@@ -82,14 +122,17 @@ class ManageModel extends React.Component {
                         <input type="text" placeholder="Save model as..." ref={this.saveModelAs} />
                     </div> &nbsp;
                     <button onClick={this.saveModel} className="ui button" disabled={!this.props.isModelSaveable}>Save Model</button>
+                    <br />{this.state.dateModelSaved}
                     <br /><br />
                     <select onChange={this.handleLoadModelName} className="ui dropdown">
                         <option value="">Load Model</option>
-                        <option value="kc_house_prices">KC House Prices</option>
+                        {optionItems}
                     </select> &nbsp;
                     {this.renderLoadModelButton()} 
                     <br /><br />
-                    <button onClick={this.handleTFVIS} className="ui button">Toggle Visor</button>                                                       
+                    <button onClick={this.handleTFVIS} className="ui button">Toggle Visor</button>
+                    {/* <br /><br />
+                    <button onClick={this.testModel} className="ui button">test</button> */}
                 </div>
             </div>
         )
